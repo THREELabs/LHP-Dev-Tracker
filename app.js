@@ -1,87 +1,118 @@
 /**
  * LHP-Dev-Tracker Core JavaScript Application
- * LenderHomePage Development & Sprint Tracker
+ * LenderHomePage Development & Sprint Tracker with Jira Integration
  */
+
+// Helper to extract Jira Ticket ID (e.g., DEV-2152 from https://lhpcorp.atlassian.net/browse/DEV-2152)
+function extractJiraTicketId(urlOrText) {
+  if (!urlOrText) return null;
+  const match = urlOrText.trim().match(/([A-Z0-9]+-\d+)/i);
+  return match ? match[1].toUpperCase() : null;
+}
 
 // Initial Seed Data for LHP Engineering Tasks
 const initialTasks = [
   {
-    id: "LHP-101",
+    id: "DEV-2152",
+    jiraId: "DEV-2152",
+    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2152",
     title: "Implement Real-time Rate Table API Integration",
     category: "Integrations",
     priority: "Urgent",
     status: "in-progress",
-    assignee: "Kevin Webber",
+    submitter: "Kevin",
+    assignee: "Nishant",
     points: 8,
     desc: "Connect LenderHomePage rate engine with live mortgage rate feeder API and cache results in Redis."
   },
   {
-    id: "LHP-102",
+    id: "DEV-2153",
+    jiraId: "DEV-2153",
+    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2153",
     title: "Refactor Digital Mortgage Application Wizard",
     category: "Frontend",
     priority: "High",
     status: "in-progress",
-    assignee: "Sarah Jenkins",
+    submitter: "Christie",
+    assignee: "Kevin",
     points: 5,
     desc: "Modernize multi-step loan application form UI with glassmorphism design system & instant validation."
   },
   {
-    id: "LHP-103",
+    id: "DEV-2154",
+    jiraId: "DEV-2154",
+    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2154",
     title: "Optimize Lead Management Webhook Pipeline",
     category: "LHP Core",
     priority: "High",
     status: "review",
-    assignee: "Alex Chen",
+    submitter: "Nishant",
+    assignee: "Christie",
     points: 5,
     desc: "Reduce webhook processing latency from 450ms to <80ms for incoming CRM lead notifications."
   },
   {
-    id: "LHP-104",
+    id: "DEV-2155",
+    jiraId: "DEV-2155",
+    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2155",
     title: "LOS Partner Authentication & SSO Upgrade",
     category: "Backend API",
     priority: "Urgent",
     status: "review",
-    assignee: "Kevin Webber",
+    submitter: "Kevin",
+    assignee: "Kevin",
     points: 8,
     desc: "Upgrade OAuth2/OIDC provider integration for Encompass and BytePro LOS integrations."
   },
   {
-    id: "LHP-105",
+    id: "DEV-2156",
+    jiraId: "DEV-2156",
+    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2156",
     title: "Automated Document Upload OCR Processing",
     category: "Integrations",
     priority: "Medium",
     status: "backlog",
-    assignee: "Marcus Vance",
+    submitter: "Christie",
+    assignee: "Nishant",
     points: 13,
     desc: "Implement AWS Textract parser for automatic W-2 and paystub verification."
   },
   {
-    id: "LHP-106",
+    id: "DEV-2157",
+    jiraId: "DEV-2157",
+    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2157",
     title: "Borrower Portal Mobile Responsive Audit",
     category: "Frontend",
     priority: "Medium",
     status: "backlog",
-    assignee: "Sarah Jenkins",
+    submitter: "Nishant",
+    assignee: "Christie",
     points: 3,
     desc: "Ensure touch compliance and responsive layout adjustments across iOS & Android viewports."
   },
   {
-    id: "LHP-107",
+    id: "DEV-2158",
+    jiraId: "DEV-2158",
+    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2158",
     title: "CI/CD Pipeline Parallel Execution Setup",
     category: "DevOps & CI/CD",
     priority: "Medium",
     status: "completed",
-    assignee: "Alex Chen",
+    submitter: "Kevin",
+    assignee: "Nishant",
     points: 5,
     desc: "Migrate GitHub Actions workflows to parallel test suites, cutting build times by 60%."
   },
   {
-    id: "LHP-108",
+    id: "DEV-2159",
+    jiraId: "DEV-2159",
+    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2159",
     title: "Security & Vulnerability Patching (Q3)",
     category: "LHP Core",
     priority: "High",
     status: "completed",
-    assignee: "Marcus Vance",
+    submitter: "Christie",
+    assignee: "Kevin",
     points: 3,
     desc: "Update core dependencies and pass annual penetration audit checks."
   }
@@ -93,7 +124,7 @@ const pullRequests = [
     id: "PR-342",
     repo: "LHP-Core-API",
     title: "feat(auth): Add Encompass OAuth2 SSO refresh token handling",
-    author: "Kevin Webber",
+    author: "Kevin",
     status: "Review Needed",
     comments: 4,
     updated: "2 hours ago"
@@ -102,7 +133,7 @@ const pullRequests = [
     id: "PR-341",
     repo: "LHP-Frontend-Web",
     title: "refactor(wizard): Glassmorphism step navigation components",
-    author: "Sarah Jenkins",
+    author: "Christie",
     status: "Approved",
     comments: 8,
     updated: "4 hours ago"
@@ -111,7 +142,7 @@ const pullRequests = [
     id: "PR-340",
     repo: "LHP-Lead-Pipeline",
     title: "perf(webhooks): Async queue batching for CRM sync",
-    author: "Alex Chen",
+    author: "Nishant",
     status: "Review Needed",
     comments: 2,
     updated: "Yesterday"
@@ -121,43 +152,35 @@ const pullRequests = [
 // Team Members Data
 const teamMembers = [
   {
-    name: "Kevin Webber",
-    role: "Lead Engineer",
-    initials: "KW",
-    activeTasks: 2,
+    name: "Kevin",
+    role: "Engineering Lead",
+    initials: "KV",
+    activeTasks: 3,
     completedPoints: 24,
     status: "In Deep Work"
   },
   {
-    name: "Sarah Jenkins",
-    role: "Senior UI/UX Engineer",
-    initials: "SJ",
-    activeTasks: 2,
-    completedPoints: 18,
+    name: "Nishant",
+    role: "Senior Full Stack Dev",
+    initials: "NS",
+    activeTasks: 3,
+    completedPoints: 21,
     status: "Available"
   },
   {
-    name: "Alex Chen",
-    role: "Backend & Systems Arch",
-    initials: "AC",
+    name: "Christie",
+    role: "Product & Engineering",
+    initials: "CH",
     activeTasks: 2,
-    completedPoints: 22,
-    status: "Reviewing Code"
-  },
-  {
-    name: "Marcus Vance",
-    role: "Full Stack Engineer",
-    initials: "MV",
-    activeTasks: 2,
-    completedPoints: 16,
-    status: "Available"
+    completedPoints: 19,
+    status: "Reviewing Jira Tickets"
   }
 ];
 
 // App State
 let tasksState = [...initialTasks];
 
-// DOM Elements
+// DOM Initialization
 document.addEventListener("DOMContentLoaded", () => {
   initNavigation();
   initSearchAndFilters();
@@ -195,6 +218,7 @@ function initNavigation() {
 // Search and Filtering
 function initSearchAndFilters() {
   const searchInput = document.getElementById("task-search");
+  const filterSubmitter = document.getElementById("filter-submitter");
   const filterAssignee = document.getElementById("filter-assignee");
   const filterPriority = document.getElementById("filter-priority");
 
@@ -206,13 +230,15 @@ function initSearchAndFilters() {
     }
   });
 
-  searchInput.addEventListener("input", filterAndRender);
-  filterAssignee.addEventListener("change", filterAndRender);
-  filterPriority.addEventListener("change", filterAndRender);
+  if (searchInput) searchInput.addEventListener("input", filterAndRender);
+  if (filterSubmitter) filterSubmitter.addEventListener("change", filterAndRender);
+  if (filterAssignee) filterAssignee.addEventListener("change", filterAndRender);
+  if (filterPriority) filterPriority.addEventListener("change", filterAndRender);
 }
 
 function filterAndRender() {
   const query = document.getElementById("task-search").value.toLowerCase();
+  const submitterFilter = document.getElementById("filter-submitter").value;
   const assigneeFilter = document.getElementById("filter-assignee").value;
   const priorityFilter = document.getElementById("filter-priority").value;
 
@@ -220,11 +246,15 @@ function filterAndRender() {
     const matchesQuery = task.title.toLowerCase().includes(query) ||
                          task.desc.toLowerCase().includes(query) ||
                          task.id.toLowerCase().includes(query) ||
+                         (task.jiraId && task.jiraId.toLowerCase().includes(query)) ||
+                         task.submitter.toLowerCase().includes(query) ||
                          task.assignee.toLowerCase().includes(query);
+
+    const matchesSubmitter = submitterFilter === "all" || task.submitter === submitterFilter;
     const matchesAssignee = assigneeFilter === "all" || task.assignee === assigneeFilter;
     const matchesPriority = priorityFilter === "all" || task.priority === priorityFilter;
 
-    return matchesQuery && matchesAssignee && matchesPriority;
+    return matchesQuery && matchesSubmitter && matchesAssignee && matchesPriority;
   });
 
   renderBoard(filtered);
@@ -260,33 +290,56 @@ function renderBoard(tasksToRender = tasksState) {
   });
 
   // Update counts
-  document.getElementById("count-backlog").textContent = counts["backlog"];
-  document.getElementById("count-in-progress").textContent = counts["in-progress"];
-  document.getElementById("count-review").textContent = counts["review"];
-  document.getElementById("count-completed").textContent = counts["completed"];
+  if (document.getElementById("count-backlog")) document.getElementById("count-backlog").textContent = counts["backlog"];
+  if (document.getElementById("count-in-progress")) document.getElementById("count-in-progress").textContent = counts["in-progress"];
+  if (document.getElementById("count-review")) document.getElementById("count-review").textContent = counts["review"];
+  if (document.getElementById("count-completed")) document.getElementById("count-completed").textContent = counts["completed"];
 }
 
-// Create Card DOM Element
+// Create Card DOM Element with Jira Link & Submitter details
 function createTaskCardElement(task) {
   const card = document.createElement("div");
   card.className = "task-card";
   card.setAttribute("draggable", "true");
   card.dataset.id = task.id;
 
-  const getInitials = (name) => name.split(" ").map(n => n[0]).join("");
+  const getInitials = (name) => name ? name.substring(0, 2).toUpperCase() : "?";
   const categoryClass = task.category.toLowerCase().replace(/[^a-z]/g, "");
+
+  // Jira Pill HTML
+  const jiraBadgeHtml = task.jiraUrl ? `
+    <a href="${task.jiraUrl}" target="_blank" rel="noopener noreferrer" class="jira-ticket-badge" title="Open ${task.jiraId} in Jira">
+      <i class="fa-brands fa-atlassian"></i>
+      <span>${task.jiraId || 'Jira Ticket'}</span>
+      <i class="fa-solid fa-arrow-up-right-from-square mini-ext-icon"></i>
+    </a>
+  ` : `
+    <span class="jira-ticket-badge no-link">
+      <i class="fa-solid fa-ticket"></i>
+      <span>${task.id}</span>
+    </span>
+  `;
 
   card.innerHTML = `
     <div class="task-card-header">
-      <span class="category-tag ${categoryClass}">${task.category}</span>
+      <div class="header-left-tags">
+        <span class="category-tag ${categoryClass}">${task.category}</span>
+        ${jiraBadgeHtml}
+      </div>
       <span class="priority-pill priority-${task.priority.toLowerCase()}">${task.priority}</span>
     </div>
+
     <div class="task-title">${task.title}</div>
     <div class="task-desc">${task.desc}</div>
+
+    <div class="submitter-info-row">
+      <span class="submitter-label"><i class="fa-solid fa-user-pen"></i> Submitter: <strong>${task.submitter}</strong></span>
+    </div>
+
     <div class="task-card-footer">
       <div class="assignee-info">
-        <div class="mini-avatar">${getInitials(task.assignee)}</div>
-        <span class="assignee-name">${task.assignee}</span>
+        <div class="mini-avatar" title="Assignee: ${task.assignee}">${getInitials(task.assignee)}</div>
+        <span class="assignee-name">Assignee: <strong>${task.assignee}</strong></span>
       </div>
       <span class="points-tag">${task.points} pts</span>
     </div>
@@ -392,12 +445,12 @@ function updateStats() {
   const inProgress = tasksState.filter(t => t.status === "in-progress" || t.status === "review").length;
   const completed = tasksState.filter(t => t.status === "completed").length;
 
-  document.getElementById("stat-total-tasks").textContent = total;
-  document.getElementById("stat-in-progress").textContent = inProgress;
-  document.getElementById("stat-completed").textContent = completed;
+  if (document.getElementById("stat-total-tasks")) document.getElementById("stat-total-tasks").textContent = total;
+  if (document.getElementById("stat-in-progress")) document.getElementById("stat-in-progress").textContent = inProgress;
+  if (document.getElementById("stat-completed")) document.getElementById("stat-completed").textContent = completed;
 
   const percentage = Math.round((completed / total) * 100) || 0;
-  document.getElementById("sprint-progress-bar").style.width = `${percentage}%`;
+  if (document.getElementById("sprint-progress-bar")) document.getElementById("sprint-progress-bar").style.width = `${percentage}%`;
 }
 
 // Task Modal Functionality
@@ -407,6 +460,8 @@ function initModal() {
   const btnClose = document.getElementById("btn-close-modal");
   const btnCancel = document.getElementById("btn-cancel-modal");
   const form = document.getElementById("task-form");
+
+  if (!modal || !form) return;
 
   const openModal = () => modal.classList.add("active");
   const closeModal = () => {
@@ -420,9 +475,23 @@ function initModal() {
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+
+    const jiraUrlInput = document.getElementById("task-jira-url").value.trim();
+    const extractedJiraId = extractJiraTicketId(jiraUrlInput);
+    const generatedId = extractedJiraId || `DEV-${2160 + tasksState.length}`;
+
+    // Construct Jira URL if only ticket ID was entered (e.g. DEV-2152)
+    let fullJiraUrl = jiraUrlInput;
+    if (jiraUrlInput && !jiraUrlInput.startsWith("http")) {
+      fullJiraUrl = `https://lhpcorp.atlassian.net/browse/${extractedJiraId || jiraUrlInput}`;
+    }
+
     const newTask = {
-      id: `LHP-${100 + tasksState.length + 1}`,
+      id: generatedId,
+      jiraId: extractedJiraId || generatedId,
+      jiraUrl: fullJiraUrl || `https://lhpcorp.atlassian.net/browse/${generatedId}`,
       title: document.getElementById("task-title").value,
+      submitter: document.getElementById("task-submitter").value,
       category: document.getElementById("task-category").value,
       priority: document.getElementById("task-priority").value,
       assignee: document.getElementById("task-assignee").value,

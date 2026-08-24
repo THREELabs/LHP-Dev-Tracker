@@ -499,11 +499,61 @@ body {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 
-.task-card-header {
+.header-left-tags {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.jira-ticket-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 82, 204, 0.2);
+  color: #4c9aff;
+  border: 1px solid rgba(0, 82, 204, 0.4);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: var(--transition-fast);
+}
+
+.jira-ticket-badge:hover {
+  background: rgba(0, 82, 204, 0.4);
+  color: #deebff;
+  border-color: #4c9aff;
+  box-shadow: 0 0 8px rgba(76, 154, 255, 0.4);
+}
+
+.jira-ticket-badge.no-link {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.mini-ext-icon {
+  font-size: 0.6rem;
+  opacity: 0.8;
+}
+
+.submitter-info-row {
   margin-bottom: 10px;
+  padding: 4px 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.submitter-label {
+  font-size: 0.74rem;
+  color: var(--accent-cyan);
+}
+
+.submitter-label strong {
+  color: #ffffff;
 }
 
 .category-tag {
