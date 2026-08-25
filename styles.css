@@ -65,10 +65,10 @@ body {
 
 /* Sidebar */
 .sidebar {
-  width: 260px;
+  width: 280px;
   background: #ffffff;
   border-right: 1px solid var(--border-color);
-  padding: 24px 20px;
+  padding: 24px 22px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -85,15 +85,16 @@ body {
   gap: 10px;
   margin-bottom: 32px;
   padding-bottom: 16px;
-  padding-right: 24px; /* Added right padding for LenderHomePage logo layout */
+  width: 100%;
   border-bottom: 1px solid var(--border-color);
 }
 
 .lhp-brand-logo {
   height: 38px;
+  max-width: 100%;
   width: auto;
-  padding-right: 16px; /* Right padding directly on logo */
   object-fit: contain;
+  object-position: left center;
 }
 
 .logo-badge {
@@ -232,10 +233,10 @@ body {
 
 /* Main Content */
 .main-content {
-  margin-left: 260px;
+  margin-left: 280px;
   flex: 1;
   padding: 28px 36px;
-  max-width: calc(100vw - 260px);
+  max-width: calc(100vw - 280px);
 }
 
 /* Top Header */
