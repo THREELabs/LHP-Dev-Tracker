@@ -1,7 +1,9 @@
 /**
  * LHP-Dev-Tracker Core JavaScript Application
- * LenderHomePage Development & Sprint Tracker with Jira Integration
+ * LenderHomePage Development & Sprint Tracker with Persistent Storage & Jira Integration
  */
+
+const STORAGE_KEY = "lhp_dev_tracker_tasks_v1";
 
 // Helper to extract Jira Ticket ID (e.g., DEV-2152 from https://lhpcorp.atlassian.net/browse/DEV-2152)
 function extractJiraTicketId(urlOrText) {
@@ -10,7 +12,7 @@ function extractJiraTicketId(urlOrText) {
   return match ? match[1].toUpperCase() : null;
 }
 
-// Initial Seed Data for LHP Engineering Tasks
+// Initial Seed Data for LHP Engineering Tasks (Fallback if localStorage is empty)
 const initialTasks = [
   {
     id: "DEV-2152",
@@ -177,14 +179,72 @@ const teamMembers = [
   }
 ];
 
+// Load Tasks from Storage or Seed Data
+function loadTasksState() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load tasks from localStorage:", err);
+  }
+  return [...initialTasks];
+}
+
 // App State
-let tasksState = [...initialTasks];
+let tasksState = loadTasksState();
+
+// Save Tasks State to LocalStorage
+function saveTasksState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasksState));
+  } catch (err) {
+    console.error("Failed to save tasks to localStorage:", err);
+  }
+}
+
+// Request Browser Persistent Storage Protection
+async function initPersistentStorage() {
+  const badgeEl = document.getElementById("storage-badge");
+  const badgeText = document.getElementById("storage-badge-text");
+
+  if (navigator.storage && navigator.storage.persist) {
+    try {
+      const isPersisted = await navigator.storage.persisted();
+      if (isPersisted) {
+        if (badgeText) badgeText.textContent = "Persistent Storage (Active)";
+        if (badgeEl) badgeEl.classList.add("active");
+        console.log("Browser Storage is explicitly flagged as Persistent.");
+      } else {
+        const granted = await navigator.storage.persist();
+        if (granted) {
+          if (badgeText) badgeText.textContent = "Persistent Storage (Active)";
+          if (badgeEl) badgeEl.classList.add("active");
+          console.log("Browser Persistent Storage granted successfully!");
+        } else {
+          if (badgeText) badgeText.textContent = "Storage (Standard)";
+          console.log("Browser Persistent Storage request not granted; standard storage active.");
+        }
+      }
+    } catch (e) {
+      console.warn("Error requesting persistent storage:", e);
+    }
+  } else {
+    if (badgeText) badgeText.textContent = "Storage (Standard)";
+  }
+}
 
 // DOM Initialization
 document.addEventListener("DOMContentLoaded", () => {
+  initPersistentStorage();
   initNavigation();
   initSearchAndFilters();
   initModal();
+  initBackupRestoreControls();
   renderBoard();
   renderTeam();
   renderPRs();
@@ -213,6 +273,53 @@ function initNavigation() {
       });
     });
   });
+}
+
+// Backup & Restore Functionality
+function initBackupRestoreControls() {
+  const btnExport = document.getElementById("btn-export-backup");
+  const btnImport = document.getElementById("btn-import-backup");
+  const inputImport = document.getElementById("input-import-file");
+
+  if (btnExport) {
+    btnExport.addEventListener("click", () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasksState, null, 2));
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `lhp_dev_tracker_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    });
+  }
+
+  if (btnImport && inputImport) {
+    btnImport.addEventListener("click", () => inputImport.click());
+
+    inputImport.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const importedTasks = JSON.parse(event.target.result);
+          if (Array.isArray(importedTasks)) {
+            tasksState = importedTasks;
+            saveTasksState();
+            renderBoard();
+            updateStats();
+            alert("Backup restored successfully!");
+          } else {
+            alert("Invalid JSON format. Expected an array of task objects.");
+          }
+        } catch (err) {
+          alert("Error parsing backup JSON file: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
 }
 
 // Search and Filtering
@@ -296,7 +403,7 @@ function renderBoard(tasksToRender = tasksState) {
   if (document.getElementById("count-completed")) document.getElementById("count-completed").textContent = counts["completed"];
 }
 
-// Create Card DOM Element with Jira Link & Submitter details
+// Create Card DOM Element with Delete & Jira Link & Submitter details
 function createTaskCardElement(task) {
   const card = document.createElement("div");
   card.className = "task-card";
@@ -326,7 +433,10 @@ function createTaskCardElement(task) {
         <span class="category-tag ${categoryClass}">${task.category}</span>
         ${jiraBadgeHtml}
       </div>
-      <span class="priority-pill priority-${task.priority.toLowerCase()}">${task.priority}</span>
+      <div class="header-right-tags">
+        <span class="priority-pill priority-${task.priority.toLowerCase()}">${task.priority}</span>
+        <button class="btn-delete-card" title="Delete task">&times;</button>
+      </div>
     </div>
 
     <div class="task-title">${task.title}</div>
@@ -344,6 +454,20 @@ function createTaskCardElement(task) {
       <span class="points-tag">${task.points} pts</span>
     </div>
   `;
+
+  // Delete event listener
+  const btnDelete = card.querySelector(".btn-delete-card");
+  if (btnDelete) {
+    btnDelete.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (confirm(`Are you sure you want to delete task ${task.id}?`)) {
+        tasksState = tasksState.filter(t => t.id !== task.id);
+        saveTasksState();
+        renderBoard();
+        updateStats();
+      }
+    });
+  }
 
   // Drag and drop event listeners
   card.addEventListener("dragstart", (e) => {
@@ -378,6 +502,7 @@ document.querySelectorAll(".kanban-cards-container").forEach(container => {
     const task = tasksState.find(t => t.id === taskId);
     if (task && targetStatus) {
       task.status = targetStatus;
+      saveTasksState();
       renderBoard();
       updateStats();
     }
@@ -501,6 +626,7 @@ function initModal() {
     };
 
     tasksState.unshift(newTask);
+    saveTasksState();
     renderBoard();
     updateStats();
     closeModal();

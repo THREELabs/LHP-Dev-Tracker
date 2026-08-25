@@ -74,15 +74,24 @@
         </div>
 
         <div class="header-actions">
-          <button class="btn btn-secondary" id="btn-filter-toggle">
-            <i class="fa-solid fa-filter"></i>
-            <span>Filter</span>
+          <div class="storage-badge" id="storage-badge" title="Browser Persistent Storage Status">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span id="storage-badge-text">Storage Protected</span>
+          </div>
+          <button class="btn btn-secondary" id="btn-export-backup" title="Export Backup JSON">
+            <i class="fa-solid fa-download"></i>
+            <span>Backup</span>
           </button>
+          <button class="btn btn-secondary" id="btn-import-backup" title="Import Backup JSON">
+            <i class="fa-solid fa-upload"></i>
+            <span>Restore</span>
+          </button>
+          <input type="file" id="input-import-file" accept=".json" style="display:none;">
           <button class="btn btn-primary" id="btn-create-task">
             <i class="fa-solid fa-plus"></i>
             <span>New Task</span>
           </button>
-          <div class="user-avatar" title="THREELabs Lead">
+          <div class="user-avatar" title="THREELabs Submitter">
             <span>TL</span>
           </div>
         </div>
