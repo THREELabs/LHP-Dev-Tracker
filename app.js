@@ -19,75 +19,8 @@ function extractJiraTicketId(urlOrText) {
   return match ? match[1].toUpperCase() : null;
 }
 
-// Initial Seed Data for LHP Engineering Tasks (Fallback)
-const initialTasks = [
-  {
-    id: "DEV-2152",
-    jiraId: "DEV-2152",
-    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2152",
-    title: "Implement Real-time Rate Table API Integration",
-    category: "SmartApp1003",
-    priority: "Urgent",
-    status: "in-progress",
-    submitter: "Kevin",
-    desc: "Connect LenderHomePage rate engine with live mortgage rate feeder API and cache results in Redis."
-  },
-  {
-    id: "DEV-2153",
-    jiraId: "DEV-2153",
-    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2153",
-    title: "Refactor Digital Mortgage Application Wizard",
-    category: "LHP2",
-    priority: "High",
-    status: "in-progress",
-    submitter: "Christie",
-    desc: "Modernize multi-step loan application form UI with glassmorphism design system & instant validation."
-  },
-  {
-    id: "DEV-2154",
-    jiraId: "DEV-2154",
-    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2154",
-    title: "Optimize Lead Management Webhook Pipeline",
-    category: "LHP3",
-    priority: "High",
-    status: "review",
-    submitter: "Nishant",
-    desc: "Reduce webhook processing latency from 450ms to <80ms for incoming CRM lead notifications."
-  },
-  {
-    id: "DEV-2155",
-    jiraId: "DEV-2155",
-    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2155",
-    title: "LOS Partner Authentication & SSO Upgrade",
-    category: "LZ POS",
-    priority: "Urgent",
-    status: "review",
-    submitter: "Kevin",
-    desc: "Upgrade OAuth2/OIDC provider integration for Encompass and BytePro LOS integrations."
-  },
-  {
-    id: "DEV-2156",
-    jiraId: "DEV-2156",
-    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2156",
-    title: "Automated Document Upload OCR Processing",
-    category: "LZ Mobile",
-    priority: "Medium",
-    status: "backlog",
-    submitter: "Christie",
-    desc: "Implement AWS Textract parser for automatic W-2 and paystub verification."
-  },
-  {
-    id: "DEV-2157",
-    jiraId: "DEV-2157",
-    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2157",
-    title: "Borrower Portal Mobile Responsive Audit",
-    category: "SM",
-    priority: "Medium",
-    status: "backlog",
-    submitter: "Nishant",
-    desc: "Ensure touch compliance and responsive layout adjustments across iOS & Android viewports."
-  }
-];
+// Initial Seed Data (Clean slate)
+const initialTasks = [];
 
 // Open Pull Requests Data
 const pullRequests = [
@@ -126,7 +59,7 @@ const teamMembers = [
     name: "Kevin",
     role: "Engineering Lead",
     initials: "KV",
-    activeTasks: 3,
+    activeTasks: 0,
     completedPoints: 24,
     status: "In Deep Work"
   },
@@ -134,7 +67,7 @@ const teamMembers = [
     name: "Nishant",
     role: "Senior Full Stack Dev",
     initials: "NS",
-    activeTasks: 3,
+    activeTasks: 0,
     completedPoints: 21,
     status: "Available"
   },
@@ -142,7 +75,7 @@ const teamMembers = [
     name: "Christie",
     role: "Product & Engineering",
     initials: "CH",
-    activeTasks: 2,
+    activeTasks: 0,
     completedPoints: 19,
     status: "Reviewing Jira Tickets"
   }
@@ -155,14 +88,16 @@ async function fetchTasksFromCloud() {
     const res = await fetch(`${JSONBIN_URL}/latest`);
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data.record) && data.record.length > 0) {
-        tasksState = data.record;
-        saveTasksToLocalStorage();
-        renderBoard();
-        updateStats();
-        if (badgeText) badgeText.textContent = "Cloud Sync (Live)";
-        return true;
-      }
+      const fetchedTasks = Array.isArray(data.record) 
+        ? data.record 
+        : (data.record && Array.isArray(data.record.tasks) ? data.record.tasks : []);
+      
+      tasksState = fetchedTasks;
+      saveTasksToLocalStorage();
+      renderBoard();
+      updateStats();
+      if (badgeText) badgeText.textContent = "Cloud Sync (Live)";
+      return true;
     }
   } catch (err) {
     console.warn("Error loading tasks from cloud database:", err);
@@ -178,10 +113,11 @@ async function saveTasksState() {
   if (badgeText) badgeText.textContent = "Saving...";
 
   try {
+    const payload = tasksState.length > 0 ? tasksState : { tasks: [] };
     const res = await fetch(JSONBIN_URL, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(tasksState)
+      body: JSON.stringify(payload)
     });
     if (res.ok) {
       console.log("Tasks saved successfully to Cloud Database!");
@@ -209,14 +145,14 @@ function loadTasksState() {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
     }
   } catch (err) {
     console.error("Failed to load tasks from localStorage:", err);
   }
-  return [...initialTasks];
+  return [];
 }
 
 // App State
