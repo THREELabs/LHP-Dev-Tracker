@@ -541,6 +541,13 @@ body {
   box-shadow: 0 6px 18px rgba(0, 102, 255, 0.08);
 }
 
+.task-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
 .header-left-tags {
   display: flex;
   align-items: center;

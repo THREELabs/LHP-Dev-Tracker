@@ -386,7 +386,6 @@ function createTaskCardElement(task) {
       </div>
       <div class="header-right-tags">
         <span class="priority-pill priority-${task.priority.toLowerCase()}">${task.priority}</span>
-        <button class="btn-delete-card" title="Delete task"><i class="fa-solid fa-xmark"></i></button>
       </div>
     </div>
 
@@ -399,20 +398,6 @@ function createTaskCardElement(task) {
       </div>
     </div>
   `;
-
-  // Delete event listener
-  const btnDelete = card.querySelector(".btn-delete-card");
-  if (btnDelete) {
-    btnDelete.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (confirm(`Are you sure you want to delete task ${task.id}?`)) {
-        tasksState = tasksState.filter(t => t.id !== task.id);
-        saveTasksState();
-        renderBoard();
-        updateStats();
-      }
-    });
-  }
 
   // Drag and drop event listeners
   card.addEventListener("dragstart", (e) => {
