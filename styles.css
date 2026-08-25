@@ -3,26 +3,32 @@
    ========================================================================== */
 
 :root {
-  --bg-dark: #0f172a;
-  --bg-card: rgba(30, 41, 59, 0.7);
-  --bg-card-hover: rgba(51, 65, 85, 0.8);
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border-glow: rgba(99, 102, 241, 0.3);
+  --bg-dark: #071527;
+  --bg-card: rgba(15, 34, 58, 0.85);
+  --bg-card-hover: rgba(24, 49, 81, 0.92);
+  --border-color: rgba(0, 132, 255, 0.18);
+  --border-glow: rgba(0, 102, 255, 0.4);
   
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-dim: #64748b;
 
+  --lhp-blue: #0066ff;
+  --lhp-navy: #001b3a;
+  --lhp-coral: #ff5a36;
+  --lhp-cyan: #00c2ff;
+  --lhp-green: #10b981;
+
   --accent-purple: #8b5cf6;
-  --accent-indigo: #6366f1;
-  --accent-blue: #3b82f6;
-  --accent-cyan: #06b6d4;
+  --accent-indigo: #0066ff;
+  --accent-blue: #0084ff;
+  --accent-cyan: #00c2ff;
   --accent-green: #10b981;
   --accent-amber: #f59e0b;
-  --accent-rose: #f43f5e;
+  --accent-rose: #ff5a36;
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-heading: 'Outfit', var(--font-sans);
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Montserrat', var(--font-sans);
   
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -42,8 +48,8 @@ body {
   font-family: var(--font-sans);
   background-color: var(--bg-dark);
   background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, rgba(0, 102, 255, 0.18) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(255, 90, 54, 0.12) 0px, transparent 50%);
   background-attachment: fixed;
   color: var(--text-main);
   min-height: 100vh;
@@ -59,7 +65,7 @@ body {
 /* Sidebar */
 .sidebar {
   width: 260px;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(7, 21, 39, 0.92);
   backdrop-filter: blur(12px);
   border-right: 1px solid var(--border-color);
   padding: 24px 20px;
@@ -73,20 +79,30 @@ body {
 
 .logo-container {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 36px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 32px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.lhp-brand-logo {
+  height: 38px;
+  width: auto;
+  filter: drop-shadow(0 2px 8px rgba(0, 102, 255, 0.25));
 }
 
 .logo-badge {
-  background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+  background: linear-gradient(135deg, var(--lhp-coral), #ff7b5a);
   color: white;
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: 1.2rem;
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(255, 90, 54, 0.35);
 }
 
 .logo-text {
@@ -138,8 +154,8 @@ body {
 
 .nav-item.active {
   color: white;
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.25), transparent);
-  border-left: 3px solid var(--accent-indigo);
+  background: linear-gradient(90deg, rgba(0, 102, 255, 0.25), transparent);
+  border-left: 3px solid var(--lhp-blue);
 }
 
 .badge {
@@ -190,7 +206,7 @@ body {
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent-indigo), var(--accent-cyan));
+  background: linear-gradient(90deg, var(--lhp-blue), var(--lhp-coral));
   border-radius: 3px;
   transition: width 0.5s ease;
 }
@@ -233,7 +249,7 @@ body {
 
 .search-box input {
   width: 100%;
-  background: rgba(30, 41, 59, 0.7);
+  background: rgba(15, 34, 58, 0.8);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 12px 16px 12px 44px;
@@ -244,7 +260,7 @@ body {
 }
 
 .search-box input:focus {
-  border-color: var(--accent-indigo);
+  border-color: var(--lhp-blue);
   box-shadow: 0 0 12px var(--border-glow);
 }
 
@@ -268,38 +284,41 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+  background: linear-gradient(135deg, var(--lhp-coral), #ff7b5a);
   color: white;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 14px rgba(255, 90, 54, 0.35);
+  font-family: var(--font-heading);
 }
 
 .btn-primary:hover {
-  opacity: 0.92;
+  opacity: 0.94;
   transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(255, 90, 54, 0.45);
 }
 
 .btn-secondary {
-  background: rgba(30, 41, 59, 0.8);
+  background: rgba(15, 34, 58, 0.85);
   color: var(--text-main);
   border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-  background: rgba(51, 65, 85, 0.9);
+  background: rgba(24, 49, 81, 0.95);
+  border-color: var(--lhp-blue);
 }
 
 .user-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  background: linear-gradient(135deg, var(--lhp-blue), var(--lhp-cyan));
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 0.9rem;
   color: white;
-  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 102, 255, 0.35);
 }
 
 /* Stats Overview */
