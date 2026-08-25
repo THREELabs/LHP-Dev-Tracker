@@ -607,10 +607,12 @@ body {
   text-transform: uppercase;
 }
 
-.category-tag.frontend { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-.category-tag.backend { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
-.category-tag.core { background: #ecfeff; color: #0e7490; border: 1px solid #a5f3fc; }
-.category-tag.integrations { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.category-tag.smartapp1003 { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.category-tag.lhp2 { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.category-tag.lhp3 { background: #ecfeff; color: #0e7490; border: 1px solid #a5f3fc; }
+.category-tag.lzmobile { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.category-tag.lzpos { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.category-tag.sm { background: #fdf2f8; color: #be185d; border: 1px solid #fbcfe8; }
 
 .priority-pill {
   font-size: 0.68rem;
