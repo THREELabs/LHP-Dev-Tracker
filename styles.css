@@ -231,6 +231,15 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
+.lhp-brand-logo {
+  height: 38px;
+  max-width: 100%;
+  width: auto;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 2px 8px rgba(0, 102, 255, 0.15));
+}
+
 .brand-header-group {
   display: flex;
   align-items: center;
