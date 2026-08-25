@@ -222,7 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initNavigation();
   initSearchAndFilters();
   initModal();
-  initBackupRestoreControls();
+  initDeleteToggle();
   renderBoard();
   renderTeam();
   renderPRs();
@@ -232,6 +232,20 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchTasksFromCloud();
   setInterval(fetchTasksFromCloud, 10000);
 });
+
+// Toggle Task Delete Mode
+function initDeleteToggle() {
+  const toggleDeleteMode = document.getElementById("toggle-delete-mode");
+  if (toggleDeleteMode) {
+    toggleDeleteMode.addEventListener("change", (e) => {
+      if (e.target.checked) {
+        document.body.classList.add("delete-mode-active");
+      } else {
+        document.body.classList.remove("delete-mode-active");
+      }
+    });
+  }
+}
 
 // Navigation Switching
 function initNavigation() {
@@ -255,53 +269,6 @@ function initNavigation() {
       });
     });
   });
-}
-
-// Backup & Restore Functionality
-function initBackupRestoreControls() {
-  const btnExport = document.getElementById("btn-export-backup");
-  const btnImport = document.getElementById("btn-import-backup");
-  const inputImport = document.getElementById("input-import-file");
-
-  if (btnExport) {
-    btnExport.addEventListener("click", () => {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasksState, null, 2));
-      const downloadAnchor = document.createElement("a");
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `lhp_dev_tracker_backup_${new Date().toISOString().slice(0,10)}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    });
-  }
-
-  if (btnImport && inputImport) {
-    btnImport.addEventListener("click", () => inputImport.click());
-
-    inputImport.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const importedTasks = JSON.parse(event.target.result);
-          if (Array.isArray(importedTasks)) {
-            tasksState = importedTasks;
-            saveTasksState();
-            renderBoard();
-            updateStats();
-            alert("Backup restored successfully and synced to Cloud!");
-          } else {
-            alert("Invalid JSON format. Expected an array of task objects.");
-          }
-        } catch (err) {
-          alert("Error parsing backup JSON file: " + err.message);
-        }
-      };
-      reader.readAsText(file);
-    });
-  }
 }
 
 // Search and Filtering
@@ -416,6 +383,7 @@ function createTaskCardElement(task) {
       </div>
       <div class="header-right-tags">
         <span class="priority-pill priority-${task.priority.toLowerCase()}">${task.priority}</span>
+        <button class="btn-delete-card" title="Delete task"><i class="fa-solid fa-trash-can"></i> Delete</button>
       </div>
     </div>
 
@@ -428,6 +396,20 @@ function createTaskCardElement(task) {
       </div>
     </div>
   `;
+
+  // Delete event listener
+  const btnDelete = card.querySelector(".btn-delete-card");
+  if (btnDelete) {
+    btnDelete.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (confirm(`Are you sure you want to delete task ${task.id}?`)) {
+        tasksState = tasksState.filter(t => t.id !== task.id);
+        saveTasksState();
+        renderBoard();
+        updateStats();
+      }
+    });
+  }
 
   // Drag and drop event listeners
   card.addEventListener("dragstart", (e) => {

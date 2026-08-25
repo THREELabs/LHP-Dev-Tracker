@@ -78,15 +78,11 @@
             <i class="fa-solid fa-cloud"></i>
             <span id="cloud-badge-text">Cloud Sync (Live)</span>
           </div>
-          <button class="btn btn-secondary" id="btn-export-backup" title="Save tasks to a local file (JSON)">
-            <i class="fa-solid fa-floppy-disk"></i>
-            <span>Save File</span>
-          </button>
-          <button class="btn btn-secondary" id="btn-import-backup" title="Load tasks from a local file (JSON)">
-            <i class="fa-solid fa-folder-open"></i>
-            <span>Load File</span>
-          </button>
-          <input type="file" id="input-import-file" accept=".json" style="display:none;">
+          <label class="toggle-delete-container" title="Toggle Task Deletion Mode">
+            <input type="checkbox" id="toggle-delete-mode">
+            <span class="toggle-slider"></span>
+            <span class="toggle-text"><i class="fa-solid fa-trash-can"></i> Allow Delete</span>
+          </label>
           <button class="btn btn-primary" id="btn-create-task">
             <i class="fa-solid fa-plus"></i>
             <span>New Task</span>

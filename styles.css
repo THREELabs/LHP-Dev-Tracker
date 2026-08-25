@@ -549,6 +549,93 @@ body {
   margin-bottom: 12px;
 }
 
+/* Toggle Delete Switch */
+.toggle-delete-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  background: #f1f5f9;
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  user-select: none;
+  transition: var(--transition-fast);
+}
+
+.toggle-delete-container:hover {
+  background: #e2e8f0;
+}
+
+.toggle-delete-container input {
+  display: none;
+}
+
+.toggle-slider {
+  width: 32px;
+  height: 18px;
+  background-color: #cbd5e1;
+  border-radius: 20px;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 2px;
+  top: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-delete-container input:checked + .toggle-slider {
+  background-color: #ef4444;
+}
+
+.toggle-delete-container input:checked + .toggle-slider::before {
+  transform: translateX(14px);
+}
+
+.toggle-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.toggle-delete-container input:checked ~ .toggle-text {
+  color: #dc2626;
+}
+
+/* Delete Button on Task Cards (Only visible when delete mode active) */
+.btn-delete-card {
+  display: none;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  transition: var(--transition-fast);
+}
+
+.delete-mode-active .btn-delete-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-delete-card:hover {
+  background: #dc2626;
+  color: white;
+  border-color: #b91c1c;
+}
+
 .header-left-tags {
   display: flex;
   align-items: center;
