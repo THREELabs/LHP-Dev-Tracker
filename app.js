@@ -1,6 +1,6 @@
 /**
  * LHP-Dev-Tracker Core JavaScript Application
- * LenderHomePage Development & Sprint Tracker with Cloud Sync & Jira Integration
+ * Development & Sprint Tracker with Cloud Sync & Jira Integration
  */
 
 const STORAGE_KEY = "lhp_dev_tracker_tasks_v1";

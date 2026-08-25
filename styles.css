@@ -231,12 +231,51 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
-.lhp-brand-logo {
-  height: 38px;
-  max-width: 100%;
-  width: auto;
-  object-fit: contain;
-  object-position: left center;
+.brand-header-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--lhp-blue), #0044cc);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
+}
+
+.login-brand-box {
+  width: 52px;
+  height: 52px;
+  font-size: 1.5rem;
+  border-radius: var(--radius-md);
+}
+
+.brand-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -0.5px;
+  color: var(--text-main);
+}
+
+.brand-subtitle {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--lhp-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .logo-badge {

@@ -1,9 +1,9 @@
 # LHP-Dev-Tracker
 
-Development task, milestone, and sprint tracker for LenderHomePage developer projects.
+Development task, milestone, and sprint tracker for engineering projects.
 
 ## Overview
-LHP-Dev-Tracker centralizes feature tracking, pull request statuses, bug triage, and sprint planning for the LenderHomePage development team.
+LHP-Dev-Tracker centralizes feature tracking, pull request statuses, bug triage, and sprint planning for the engineering team.
 
 ## Getting Started
 - Clone the repository: `git clone https://github.com/THREELabs/LHP-Dev-Tracker.git`
@@ -11,7 +11,7 @@ LHP-Dev-Tracker centralizes feature tracking, pull request statuses, bug triage,
 - Run local development server: `npm run dev`
 
 ## Features
-- Task & Sprint Board
-- GitHub PR & Commit Integration
+- Task & Sprint Board with Live Cloud Database Sync
+- Jira Ticket Integration
 - Developer Workload Overview
-- Performance & KPI Analytics
+- Performance & Analytics
