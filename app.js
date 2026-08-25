@@ -169,7 +169,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (checkAuth()) {
     renderBoard();
     renderTeam();
-    renderPRs();
     updateStats();
     fetchTasksFromCloud();
     setInterval(fetchTasksFromCloud, 10000);
@@ -214,7 +213,6 @@ function initAuth() {
         checkAuth();
         renderBoard();
         renderTeam();
-        renderPRs();
         updateStats();
         fetchTasksFromCloud();
       } else {
@@ -460,73 +458,69 @@ document.querySelectorAll(".kanban-cards-container").forEach(container => {
   });
 });
 
-// Render Team Cards
+// Render Team Cards with Real Dynamic Workload
 function renderTeam() {
   const grid = document.getElementById("team-cards-grid");
   if (!grid) return;
 
-  grid.innerHTML = teamMembers.map(m => `
-    <div class="team-card">
-      <div class="team-card-header">
-        <div class="team-avatar">${m.initials}</div>
-        <div class="team-member-details">
-          <h3>${m.name}</h3>
-          <span>${m.role}</span>
+  grid.innerHTML = teamMembers.map(m => {
+    const memberTasks = tasksState.filter(t => t.submitter === m.name);
+    const activeCount = memberTasks.filter(t => t.status !== "completed").length;
+    const completedCount = memberTasks.filter(t => t.status === "completed").length;
+    const totalCount = memberTasks.length;
+
+    return `
+      <div class="team-card">
+        <div class="team-card-header">
+          <div class="team-avatar">${m.initials}</div>
+          <div class="team-member-details">
+            <h3>${m.name}</h3>
+            <span>${m.role}</span>
+          </div>
+        </div>
+        <div class="capacity-stats">
+          <div>
+            <div style="color: var(--text-muted); font-size: 0.75rem;">Active Tasks</div>
+            <div style="font-weight: 700; font-size: 1.1rem; color: var(--lhp-blue);">${activeCount}</div>
+          </div>
+          <div>
+            <div style="color: var(--text-muted); font-size: 0.75rem;">Completed</div>
+            <div style="font-weight: 700; font-size: 1.1rem; color: var(--lhp-green);">${completedCount}</div>
+          </div>
+          <div>
+            <div style="color: var(--text-muted); font-size: 0.75rem;">Total Submitted</div>
+            <div style="font-weight: 700; font-size: 1.1rem; color: var(--lhp-coral);">${totalCount}</div>
+          </div>
         </div>
       </div>
-      <div class="capacity-stats">
-        <div>
-          <div style="color: var(--text-muted); font-size: 0.75rem;">Active Tasks</div>
-          <div style="font-weight: 700; font-size: 1.1rem; color: var(--lhp-blue);">${m.activeTasks}</div>
-        </div>
-        <div>
-          <div style="color: var(--text-muted); font-size: 0.75rem;">Sprint Points</div>
-          <div style="font-weight: 700; font-size: 1.1rem; color: var(--lhp-green);">${m.completedPoints}</div>
-        </div>
-        <div>
-          <div style="color: var(--text-muted); font-size: 0.75rem;">Status</div>
-          <div style="font-weight: 600; font-size: 0.85rem; color: var(--lhp-coral);">${m.status}</div>
-        </div>
-      </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
-// Render PR List
-function renderPRs() {
-  const prWrapper = document.getElementById("pr-list-wrapper");
-  if (!prWrapper) return;
-
-  document.getElementById("pr-count-badge").textContent = pullRequests.length;
-
-  prWrapper.innerHTML = pullRequests.map(pr => `
-    <div class="pr-card">
-      <div class="pr-title-group">
-        <i class="fa-solid fa-code-pull-request pr-icon"></i>
-        <div class="pr-info">
-          <h4>[${pr.repo}] ${pr.title}</h4>
-          <p>Opened by <strong>${pr.author}</strong> &bull; ${pr.updated} &bull; ${pr.comments} comments</p>
-        </div>
-      </div>
-      <span class="pr-status-badge ${pr.status === 'Approved' ? 'approved' : 'review-needed'}">
-        ${pr.status}
-      </span>
-    </div>
-  `).join("");
-}
-
-// Update Top Stat Cards
+// Update Top Stat Cards & Dynamic Progress
 function updateStats() {
   const total = tasksState.length;
   const inProgress = tasksState.filter(t => t.status === "in-progress" || t.status === "review").length;
   const completed = tasksState.filter(t => t.status === "completed").length;
+  const submittersCount = new Set(tasksState.map(t => t.submitter)).size || 3;
 
   if (document.getElementById("stat-total-tasks")) document.getElementById("stat-total-tasks").textContent = total;
   if (document.getElementById("stat-in-progress")) document.getElementById("stat-in-progress").textContent = inProgress;
   if (document.getElementById("stat-completed")) document.getElementById("stat-completed").textContent = completed;
+  if (document.getElementById("stat-active-submitters")) document.getElementById("stat-active-submitters").textContent = submittersCount;
 
-  const percentage = Math.round((completed / total) * 100) || 0;
-  if (document.getElementById("sprint-progress-bar")) document.getElementById("sprint-progress-bar").style.width = `${percentage}%`;
+  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+  
+  const progressBar = document.getElementById("sprint-progress-bar");
+  const completedLabel = document.getElementById("sprint-completed-label");
+  const percentLabel = document.getElementById("sprint-percent-label");
+
+  if (progressBar) progressBar.style.width = `${percentage}%`;
+  if (completedLabel) completedLabel.textContent = `${completed} of ${total} Completed`;
+  if (percentLabel) percentLabel.textContent = `${percentage}%`;
+
+  // Re-render team view to update active task counts per submitter
+  renderTeam();
 }
 
 // Task Modal Functionality

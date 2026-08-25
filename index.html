@@ -81,28 +81,23 @@
           <i class="fa-solid fa-users-gear"></i>
           <span>Team Capacity</span>
         </a>
-        <a href="#prs" class="nav-item" data-view="prs">
-          <i class="fa-solid fa-code-pull-request"></i>
-          <span>Pull Requests</span>
-          <span class="badge" id="pr-count-badge">5</span>
-        </a>
         <a href="#analytics" class="nav-item" data-view="analytics">
           <i class="fa-solid fa-chart-line"></i>
-          <span>Sprint Analytics</span>
+          <span>Escalation Analytics</span>
         </a>
       </nav>
 
       <div class="sprint-info-card">
         <div class="sprint-header">
-          <span class="sprint-tag">Active Sprint</span>
-          <span class="sprint-name">Sprint 24.8</span>
+          <span class="sprint-tag">Sprint Status</span>
+          <span class="sprint-name" id="sprint-status-label">Active Sprint</span>
         </div>
         <div class="progress-bar-container">
-          <div class="progress-bar-fill" id="sprint-progress-bar" style="width: 68%;"></div>
+          <div class="progress-bar-fill" id="sprint-progress-bar" style="width: 0%;"></div>
         </div>
         <div class="sprint-footer">
-          <span>12 Days Remaining</span>
-          <span>68% Done</span>
+          <span id="sprint-completed-label">0 Completed</span>
+          <span id="sprint-percent-label">0%</span>
         </div>
       </div>
     </aside>
@@ -113,7 +108,7 @@
       <header class="top-header">
         <div class="search-box">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="task-search" placeholder="Search tasks, tickets, or devs (Press '/' to focus)...">
+          <input type="text" id="task-search" placeholder="Search tasks, tickets, or submitters (Press '/' to focus)...">
         </div>
 
         <div class="header-actions">
@@ -130,7 +125,7 @@
             <i class="fa-solid fa-plus"></i>
             <span>New Task</span>
           </button>
-          <div class="user-avatar" title="THREELabs Submitter">
+          <div class="user-avatar" title="Dev Submitter">
             <span>TL</span>
           </div>
           <button class="btn btn-secondary" id="btn-signout" title="Sign Out of Dev Tracker">
@@ -147,9 +142,8 @@
             <i class="fa-solid fa-list-check"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Total Sprint Tasks</span>
-            <span class="stat-value" id="stat-total-tasks">24</span>
-            <span class="stat-change positive"><i class="fa-solid fa-arrow-up"></i> +4 this week</span>
+            <span class="stat-label">Total Tasks</span>
+            <span class="stat-value" id="stat-total-tasks">0</span>
           </div>
         </div>
 
@@ -158,9 +152,8 @@
             <i class="fa-solid fa-spinner"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">In Progress</span>
-            <span class="stat-value" id="stat-in-progress">9</span>
-            <span class="stat-change neutral">3 reviewers active</span>
+            <span class="stat-label">In Progress / Review</span>
+            <span class="stat-value" id="stat-in-progress">0</span>
           </div>
         </div>
 
@@ -170,19 +163,17 @@
           </div>
           <div class="stat-details">
             <span class="stat-label">Completed</span>
-            <span class="stat-value" id="stat-completed">11</span>
-            <span class="stat-change positive">88 Story Points</span>
+            <span class="stat-value" id="stat-completed">0</span>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon amber">
-            <i class="fa-solid fa-fire"></i>
+            <i class="fa-solid fa-users"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Velocity Rate</span>
-            <span class="stat-value">4.8 pts/day</span>
-            <span class="stat-change positive"><i class="fa-solid fa-arrow-up"></i> 12% vs last sprint</span>
+            <span class="stat-label">Active Submitters</span>
+            <span class="stat-value" id="stat-active-submitters">3</span>
           </div>
         </div>
       </section>
@@ -278,26 +269,17 @@
         <!-- View 2: Team Capacity -->
         <section id="view-team" class="view-panel">
           <div class="panel-header">
-            <h2>LHP Developer Team Capacity</h2>
-            <p>Real-time workload distribution and task velocity.</p>
+            <h2>Developer Team Capacity</h2>
+            <p>Real-time workload distribution per submitter.</p>
           </div>
           <div class="team-grid" id="team-cards-grid"></div>
         </section>
 
-        <!-- View 3: Pull Requests -->
-        <section id="view-prs" class="view-panel">
-          <div class="panel-header">
-            <h2>Open Pull Requests</h2>
-            <p>Active code reviews and build statuses for LenderHomePage repos.</p>
-          </div>
-          <div class="pr-list-container" id="pr-list-wrapper"></div>
-        </section>
-
-        <!-- View 4: Sprint Analytics -->
+        <!-- View 3: Escalation Analytics -->
         <section id="view-analytics" class="view-panel">
           <div class="panel-header">
-            <h2>Sprint Metrics & Velocity</h2>
-            <p>Burn-down performance and category distribution.</p>
+            <h2>Escalation Analytics</h2>
+            <p>Task status breakdown and category distribution.</p>
           </div>
           <div class="analytics-grid">
             <div class="analytics-card">
