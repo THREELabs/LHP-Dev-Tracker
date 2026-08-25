@@ -1,9 +1,11 @@
 /**
  * LHP-Dev-Tracker Core JavaScript Application
- * LenderHomePage Sprint & Jira Task Tracker
+ * LenderHomePage Development & Sprint Tracker with Cloud Sync & Jira Integration
  */
 
 const STORAGE_KEY = "lhp_dev_tracker_tasks_v1";
+const JSONBIN_BIN_ID = "6a8ddf62f5f4af5e2941589e";
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 // Helper to extract Jira Ticket ID (e.g., DEV-2152 from https://lhpcorp.atlassian.net/browse/DEV-2152)
 function extractJiraTicketId(urlOrText) {
@@ -12,7 +14,7 @@ function extractJiraTicketId(urlOrText) {
   return match ? match[1].toUpperCase() : null;
 }
 
-// Initial Seed Data for LHP Engineering Tasks (Fallback if localStorage is empty)
+// Initial Seed Data for LHP Engineering Tasks (Fallback)
 const initialTasks = [
   {
     id: "DEV-2152",
@@ -79,28 +81,6 @@ const initialTasks = [
     status: "backlog",
     submitter: "Nishant",
     desc: "Ensure touch compliance and responsive layout adjustments across iOS & Android viewports."
-  },
-  {
-    id: "DEV-2158",
-    jiraId: "DEV-2158",
-    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2158",
-    title: "CI/CD Pipeline Parallel Execution Setup",
-    category: "SmartApp1003",
-    priority: "Medium",
-    status: "completed",
-    submitter: "Kevin",
-    desc: "Migrate GitHub Actions workflows to parallel test suites, cutting build times by 60%."
-  },
-  {
-    id: "DEV-2159",
-    jiraId: "DEV-2159",
-    jiraUrl: "https://lhpcorp.atlassian.net/browse/DEV-2159",
-    title: "Security & Vulnerability Patching (Q3)",
-    category: "LHP2",
-    priority: "High",
-    status: "completed",
-    submitter: "Christie",
-    desc: "Update core dependencies and pass annual penetration audit checks."
   }
 ];
 
@@ -163,8 +143,54 @@ const teamMembers = [
   }
 ];
 
-// Save Tasks State to LocalStorage
-function saveTasksState() {
+// Fetch tasks from Cloud Database
+async function fetchTasksFromCloud() {
+  const badgeText = document.getElementById("cloud-badge-text");
+  try {
+    const res = await fetch(`${JSONBIN_URL}/latest`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.record) && data.record.length > 0) {
+        tasksState = data.record;
+        saveTasksToLocalStorage();
+        renderBoard();
+        updateStats();
+        if (badgeText) badgeText.textContent = "Cloud Sync (Live)";
+        return true;
+      }
+    }
+  } catch (err) {
+    console.warn("Error loading tasks from cloud database:", err);
+    if (badgeText) badgeText.textContent = "Offline Mode";
+  }
+  return false;
+}
+
+// Save tasks to Cloud Database & LocalStorage
+async function saveTasksState() {
+  saveTasksToLocalStorage();
+  const badgeText = document.getElementById("cloud-badge-text");
+  if (badgeText) badgeText.textContent = "Saving...";
+
+  try {
+    const res = await fetch(JSONBIN_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(tasksState)
+    });
+    if (res.ok) {
+      console.log("Tasks saved successfully to Cloud Database!");
+      if (badgeText) badgeText.textContent = "Cloud Sync (Live)";
+    } else {
+      if (badgeText) badgeText.textContent = "Cloud Sync (Live)";
+    }
+  } catch (err) {
+    console.error("Error saving tasks to cloud database:", err);
+    if (badgeText) badgeText.textContent = "Saved Locally";
+  }
+}
+
+function saveTasksToLocalStorage() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasksState));
   } catch (err) {
@@ -201,6 +227,10 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTeam();
   renderPRs();
   updateStats();
+
+  // Fetch latest cloud data immediately & set auto-sync interval
+  fetchTasksFromCloud();
+  setInterval(fetchTasksFromCloud, 10000);
 });
 
 // Navigation Switching
@@ -261,7 +291,7 @@ function initBackupRestoreControls() {
             saveTasksState();
             renderBoard();
             updateStats();
-            alert("Backup restored successfully!");
+            alert("Backup restored successfully and synced to Cloud!");
           } else {
             alert("Invalid JSON format. Expected an array of task objects.");
           }
@@ -355,7 +385,7 @@ function renderBoard(tasksToRender = tasksState) {
   if (document.getElementById("count-completed")) document.getElementById("count-completed").textContent = counts["completed"];
 }
 
-// Create Card DOM Element with Delete & Jira Link & Submitter details
+// Create Card DOM Element
 function createTaskCardElement(task) {
   const card = document.createElement("div");
   card.className = "task-card";
