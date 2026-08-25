@@ -179,7 +179,16 @@ const teamMembers = [
   }
 ];
 
-// Load Tasks from Storage or Seed Data
+// Save Tasks State to LocalStorage
+function saveTasksState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasksState));
+  } catch (err) {
+    console.error("Failed to save tasks to localStorage:", err);
+  }
+}
+
+// Load initial state from LocalStorage or seed data
 function loadTasksState() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -198,49 +207,8 @@ function loadTasksState() {
 // App State
 let tasksState = loadTasksState();
 
-// Save Tasks State to LocalStorage
-function saveTasksState() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasksState));
-  } catch (err) {
-    console.error("Failed to save tasks to localStorage:", err);
-  }
-}
-
-// Request Browser Persistent Storage Protection
-async function initPersistentStorage() {
-  const badgeEl = document.getElementById("storage-badge");
-  const badgeText = document.getElementById("storage-badge-text");
-
-  if (navigator.storage && navigator.storage.persist) {
-    try {
-      const isPersisted = await navigator.storage.persisted();
-      if (isPersisted) {
-        if (badgeText) badgeText.textContent = "Persistent Storage (Active)";
-        if (badgeEl) badgeEl.classList.add("active");
-        console.log("Browser Storage is explicitly flagged as Persistent.");
-      } else {
-        const granted = await navigator.storage.persist();
-        if (granted) {
-          if (badgeText) badgeText.textContent = "Persistent Storage (Active)";
-          if (badgeEl) badgeEl.classList.add("active");
-          console.log("Browser Persistent Storage granted successfully!");
-        } else {
-          if (badgeText) badgeText.textContent = "Storage (Standard)";
-          console.log("Browser Persistent Storage request not granted; standard storage active.");
-        }
-      }
-    } catch (e) {
-      console.warn("Error requesting persistent storage:", e);
-    }
-  } else {
-    if (badgeText) badgeText.textContent = "Storage (Standard)";
-  }
-}
-
 // DOM Initialization
 document.addEventListener("DOMContentLoaded", () => {
-  initPersistentStorage();
   initNavigation();
   initSearchAndFilters();
   initModal();

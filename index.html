@@ -74,17 +74,13 @@
         </div>
 
         <div class="header-actions">
-          <div class="storage-badge" id="storage-badge" title="Browser Persistent Storage Status">
-            <i class="fa-solid fa-shield-halved"></i>
-            <span id="storage-badge-text">Storage Protected</span>
-          </div>
-          <button class="btn btn-secondary" id="btn-export-backup" title="Export Backup JSON">
-            <i class="fa-solid fa-download"></i>
-            <span>Backup</span>
+          <button class="btn btn-secondary" id="btn-export-backup" title="Save tasks to a local file (JSON)">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Save File</span>
           </button>
-          <button class="btn btn-secondary" id="btn-import-backup" title="Import Backup JSON">
-            <i class="fa-solid fa-upload"></i>
-            <span>Restore</span>
+          <button class="btn btn-secondary" id="btn-import-backup" title="Load tasks from a local file (JSON)">
+            <i class="fa-solid fa-folder-open"></i>
+            <span>Load File</span>
           </button>
           <input type="file" id="input-import-file" accept=".json" style="display:none;">
           <button class="btn btn-primary" id="btn-create-task">
