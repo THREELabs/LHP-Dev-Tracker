@@ -497,6 +497,8 @@ body {
   border-color: rgba(255, 255, 255, 0.25);
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
 .storage-badge {
   display: inline-flex;
   align-items: center;
@@ -521,18 +523,30 @@ body {
 }
 
 .btn-delete-card {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  font-size: 1.1rem;
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+  color: #f87171;
+  border-radius: 4px;
+  font-size: 0.75rem;
   cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
+  padding: 3px 6px;
+  opacity: 0.3;
   transition: var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-card:hover .btn-delete-card {
+  opacity: 0.9;
 }
 
 .btn-delete-card:hover {
-  color: var(--accent-rose);
+  opacity: 1 !important;
+  background: rgba(244, 63, 94, 0.3);
+  border-color: var(--accent-rose);
+  color: #ffffff;
+  transform: scale(1.08);
 }
 
 .header-left-tags {

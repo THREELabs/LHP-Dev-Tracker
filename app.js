@@ -435,7 +435,7 @@ function createTaskCardElement(task) {
       </div>
       <div class="header-right-tags">
         <span class="priority-pill priority-${task.priority.toLowerCase()}">${task.priority}</span>
-        <button class="btn-delete-card" title="Delete task">&times;</button>
+        <button class="btn-delete-card" title="Delete task"><i class="fa-solid fa-xmark"></i></button>
       </div>
     </div>
 
