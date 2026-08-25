@@ -1117,61 +1117,98 @@ body {
   font-family: var(--font-heading);
   font-size: 1.05rem;
   margin-bottom: 20px;
+  color: var(--text-main);
 }
 
-.burndown-container {
+.analytics-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  text-align: center;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--radius-sm);
+}
+
+.analytics-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.analytics-bar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.analytics-bar-label {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  height: 180px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border-color);
+  font-size: 0.83rem;
+  color: var(--text-main);
+  font-weight: 600;
 }
 
-.burndown-bar-group {
-  display: flex;
-  gap: 4px;
-  align-items: flex-end;
+.analytics-progress-bg {
+  width: 100%;
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.analytics-progress-fill {
   height: 100%;
-  position: relative;
-  width: 14%;
-  justify-content: center;
+  background: var(--lhp-blue);
+  border-radius: 5px;
+  transition: width 0.4s ease;
 }
 
-.burndown-bar-ideal {
-  width: 12px;
-  background: #cbd5e1;
-  border-radius: 3px 3px 0 0;
+.analytics-progress-fill.green-fill {
+  background: linear-gradient(90deg, var(--lhp-blue), var(--lhp-green));
 }
 
-.burndown-bar-actual {
-  width: 12px;
-  background: linear-gradient(180deg, var(--lhp-blue), var(--lhp-coral));
-  border-radius: 3px 3px 0 0;
+.main-burndown-bg {
+  height: 16px;
+  border-radius: 8px;
 }
 
-.day-label {
-  position: absolute;
-  bottom: -24px;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.legend {
-  display: flex;
+.burndown-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
-  margin-top: 36px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  margin-bottom: 20px;
 }
 
-.dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 6px;
+.metric-box {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
+
+.metric-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.metric-val {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.metric-box.green .metric-val { color: var(--lhp-green); }
+.metric-box.amber .metric-val { color: var(--lhp-coral); }
+.metric-box.blue .metric-val { color: var(--lhp-blue); }
 
 .dot.ideal { background: #cbd5e1; }
 .dot.actual { background: var(--lhp-blue); }

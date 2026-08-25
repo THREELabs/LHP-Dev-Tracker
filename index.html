@@ -279,46 +279,20 @@
         <section id="view-analytics" class="view-panel">
           <div class="panel-header">
             <h2>Escalation Analytics</h2>
-            <p>Task status breakdown and category distribution.</p>
+            <p>Real-time escalation metrics, status breakdown, and category distribution.</p>
           </div>
           <div class="analytics-grid">
             <div class="analytics-card">
               <h3>Task Distribution by Category</h3>
-              <div class="chart-mock" id="category-distribution"></div>
+              <div id="analytics-category-container"></div>
             </div>
             <div class="analytics-card">
-              <h3>Sprint Burn-down Trend</h3>
-              <div class="burndown-container">
-                <div class="burndown-bar-group">
-                  <div class="burndown-bar-ideal" style="height: 90%;"></div>
-                  <div class="burndown-bar-actual" style="height: 85%;"></div>
-                  <span class="day-label">Mon</span>
-                </div>
-                <div class="burndown-bar-group">
-                  <div class="burndown-bar-ideal" style="height: 75%;"></div>
-                  <div class="burndown-bar-actual" style="height: 72%;"></div>
-                  <span class="day-label">Tue</span>
-                </div>
-                <div class="burndown-bar-group">
-                  <div class="burndown-bar-ideal" style="height: 60%;"></div>
-                  <div class="burndown-bar-actual" style="height: 58%;"></div>
-                  <span class="day-label">Wed</span>
-                </div>
-                <div class="burndown-bar-group">
-                  <div class="burndown-bar-ideal" style="height: 45%;"></div>
-                  <div class="burndown-bar-actual" style="height: 40%;"></div>
-                  <span class="day-label">Thu</span>
-                </div>
-                <div class="burndown-bar-group">
-                  <div class="burndown-bar-ideal" style="height: 30%;"></div>
-                  <div class="burndown-bar-actual" style="height: 32%;"></div>
-                  <span class="day-label">Fri</span>
-                </div>
-              </div>
-              <div class="legend">
-                <span><span class="dot ideal"></span> Ideal Burn</span>
-                <span><span class="dot actual"></span> Actual Progress</span>
-              </div>
+              <h3>Escalation Status Breakdown</h3>
+              <div id="analytics-status-container"></div>
+            </div>
+            <div class="analytics-card" style="grid-column: 1 / -1;">
+              <h3>Escalation Burn-down & Completion Trend</h3>
+              <div id="analytics-burndown-container"></div>
             </div>
           </div>
         </section>

@@ -519,8 +519,109 @@ function updateStats() {
   if (completedLabel) completedLabel.textContent = `${completed} of ${total} Completed`;
   if (percentLabel) percentLabel.textContent = `${percentage}%`;
 
-  // Re-render team view to update active task counts per submitter
+  // Re-render team view & analytics view to update counts per submitter and live charts
   renderTeam();
+  renderAnalytics();
+}
+
+// Render Real-time Escalation Analytics View
+function renderAnalytics() {
+  const categoryContainer = document.getElementById("analytics-category-container");
+  const statusContainer = document.getElementById("analytics-status-container");
+  const burndownContainer = document.getElementById("analytics-burndown-container");
+
+  if (!categoryContainer || !statusContainer || !burndownContainer) return;
+
+  const total = tasksState.length;
+
+  if (total === 0) {
+    const emptyHtml = `
+      <div class="analytics-empty-state">
+        <i class="fa-solid fa-chart-pie" style="font-size: 2.2rem; color: var(--text-dim); margin-bottom: 10px;"></i>
+        <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600;">No tasks created yet</p>
+        <span style="color: var(--text-dim); font-size: 0.8rem;">Create a task using '+ New Task' to view live analytics.</span>
+      </div>
+    `;
+    categoryContainer.innerHTML = emptyHtml;
+    statusContainer.innerHTML = emptyHtml;
+    burndownContainer.innerHTML = emptyHtml;
+    return;
+  }
+
+  // 1. Category Distribution
+  const categories = ["SmartApp1003", "LHP2", "LHP3", "LZ Mobile", "LZ POS", "SM"];
+  const catHtml = categories.map(cat => {
+    const count = tasksState.filter(t => t.category === cat).length;
+    const pct = Math.round((count / total) * 100);
+    return `
+      <div class="analytics-bar-item">
+        <div class="analytics-bar-label">
+          <span>${cat}</span>
+          <strong>${count} (${pct}%)</strong>
+        </div>
+        <div class="analytics-progress-bg">
+          <div class="analytics-progress-fill" style="width: ${pct}%;"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+  categoryContainer.innerHTML = `<div class="analytics-bar-list">${catHtml}</div>`;
+
+  // 2. Status Breakdown
+  const statusConfig = [
+    { label: "Backlog / Open", key: "backlog", color: "#64748b" },
+    { label: "In Progress", key: "in-progress", color: "#0066ff" },
+    { label: "Code Review", key: "review", color: "#d97706" },
+    { label: "Completed", key: "completed", color: "#10b981" }
+  ];
+
+  const statusHtml = statusConfig.map(st => {
+    const count = tasksState.filter(t => t.status === st.key).length;
+    const pct = Math.round((count / total) * 100);
+    return `
+      <div class="analytics-bar-item">
+        <div class="analytics-bar-label">
+          <span><i class="fa-solid fa-circle" style="color: ${st.color}; font-size: 0.6rem; margin-right: 6px;"></i>${st.label}</span>
+          <strong>${count} (${pct}%)</strong>
+        </div>
+        <div class="analytics-progress-bg">
+          <div class="analytics-progress-fill" style="width: ${pct}%; background: ${st.color};"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+  statusContainer.innerHTML = `<div class="analytics-bar-list">${statusHtml}</div>`;
+
+  // 3. Escalation Burn-down Trend
+  const completedCount = tasksState.filter(t => t.status === "completed").length;
+  const remainingCount = total - completedCount;
+  const completionPct = Math.round((completedCount / total) * 100);
+
+  burndownContainer.innerHTML = `
+    <div class="analytics-burndown-wrapper">
+      <div class="burndown-metrics">
+        <div class="metric-box">
+          <span class="metric-label">Total Escalations</span>
+          <span class="metric-val">${total}</span>
+        </div>
+        <div class="metric-box green">
+          <span class="metric-label">Resolved / Completed</span>
+          <span class="metric-val">${completedCount}</span>
+        </div>
+        <div class="metric-box amber">
+          <span class="metric-label">Remaining Open</span>
+          <span class="metric-val">${remainingCount}</span>
+        </div>
+        <div class="metric-box blue">
+          <span class="metric-label">Overall Resolution Rate</span>
+          <span class="metric-val">${completionPct}%</span>
+        </div>
+      </div>
+      <div class="analytics-progress-bg main-burndown-bg">
+        <div class="analytics-progress-fill green-fill" style="width: ${completionPct}%;"></div>
+      </div>
+    </div>
+  `;
 }
 
 // Task Modal Functionality
