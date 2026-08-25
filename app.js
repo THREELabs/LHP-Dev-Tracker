@@ -7,6 +7,11 @@ const STORAGE_KEY = "lhp_dev_tracker_tasks_v1";
 const JSONBIN_BIN_ID = "6a8ddf62f5f4af5e2941589e";
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
+// Authentication Credentials
+const AUTH_USER = "admin";
+const AUTH_PASS = "LenderLife123!";
+const AUTH_KEY = "lhp_tracker_authenticated";
+
 // Helper to extract Jira Ticket ID (e.g., DEV-2152 from https://lhpcorp.atlassian.net/browse/DEV-2152)
 function extractJiraTicketId(urlOrText) {
   if (!urlOrText) return null;
@@ -219,19 +224,87 @@ let tasksState = loadTasksState();
 
 // DOM Initialization
 document.addEventListener("DOMContentLoaded", () => {
+  initAuth();
   initNavigation();
   initSearchAndFilters();
   initModal();
   initDeleteToggle();
-  renderBoard();
-  renderTeam();
-  renderPRs();
-  updateStats();
 
-  // Fetch latest cloud data immediately & set auto-sync interval
-  fetchTasksFromCloud();
-  setInterval(fetchTasksFromCloud, 10000);
+  if (checkAuth()) {
+    renderBoard();
+    renderTeam();
+    renderPRs();
+    updateStats();
+    fetchTasksFromCloud();
+    setInterval(fetchTasksFromCloud, 10000);
+  }
 });
+
+// Authentication System
+function checkAuth() {
+  const isAuth = sessionStorage.getItem(AUTH_KEY) === "true" || localStorage.getItem(AUTH_KEY) === "true";
+  const loginScreen = document.getElementById("login-screen");
+  const appContainer = document.getElementById("app-container");
+
+  if (isAuth) {
+    if (loginScreen) loginScreen.style.display = "none";
+    if (appContainer) appContainer.style.display = "flex";
+    return true;
+  } else {
+    if (loginScreen) loginScreen.style.display = "flex";
+    if (appContainer) appContainer.style.display = "none";
+    return false;
+  }
+}
+
+function initAuth() {
+  const loginForm = document.getElementById("login-form");
+  const errorMsg = document.getElementById("login-error-msg");
+  const btnSignout = document.getElementById("btn-signout");
+  const btnTogglePwd = document.getElementById("btn-toggle-pwd");
+  const pwdInput = document.getElementById("login-password");
+  const eyeIcon = document.getElementById("eye-icon");
+
+  if (loginForm) {
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const user = document.getElementById("login-username").value.trim();
+      const pass = document.getElementById("login-password").value;
+
+      if (user === AUTH_USER && pass === AUTH_PASS) {
+        sessionStorage.setItem(AUTH_KEY, "true");
+        localStorage.setItem(AUTH_KEY, "true");
+        if (errorMsg) errorMsg.style.display = "none";
+        checkAuth();
+        renderBoard();
+        renderTeam();
+        renderPRs();
+        updateStats();
+        fetchTasksFromCloud();
+      } else {
+        if (errorMsg) errorMsg.style.display = "flex";
+      }
+    });
+  }
+
+  // Password Eye Toggle
+  if (btnTogglePwd && pwdInput && eyeIcon) {
+    btnTogglePwd.addEventListener("click", () => {
+      const isPwd = pwdInput.type === "password";
+      pwdInput.type = isPwd ? "text" : "password";
+      eyeIcon.className = isPwd ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+    });
+  }
+
+  // Sign Out Handler
+  if (btnSignout) {
+    btnSignout.addEventListener("click", () => {
+      sessionStorage.removeItem(AUTH_KEY);
+      localStorage.removeItem(AUTH_KEY);
+      checkAuth();
+    });
+  }
+}
 
 // Toggle Task Delete Mode
 function initDeleteToggle() {

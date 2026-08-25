@@ -21,7 +21,50 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app-container">
+  <!-- Login Screen Overlay -->
+  <div id="login-screen" class="login-screen-container">
+    <div class="login-card">
+      <div class="login-brand">
+        <img src="https://d11pnootpsw4yy.cloudfront.net/build/assets/lhp-logo-BumdWv1D.svg" alt="LenderHomePage Logo" class="login-logo" />
+        <div class="login-badge">DEV TRACKER</div>
+      </div>
+      <h2 class="login-title">Engineering Dashboard Login</h2>
+      <p class="login-subtitle">Please authenticate to access team tasks & sprint board</p>
+
+      <form id="login-form">
+        <div id="login-error-msg" class="login-error-badge" style="display:none;">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span id="login-error-text">Invalid username or password</span>
+        </div>
+
+        <div class="form-group">
+          <label for="login-username"><i class="fa-solid fa-user"></i> Username</label>
+          <input type="text" id="login-username" required placeholder="Enter username" autocomplete="username" value="admin">
+        </div>
+
+        <div class="form-group">
+          <label for="login-password"><i class="fa-solid fa-lock"></i> Password</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="login-password" required placeholder="Enter password" autocomplete="current-password">
+            <button type="button" id="btn-toggle-pwd" class="btn-pwd-eye" title="Show/Hide Password">
+              <i class="fa-solid fa-eye" id="eye-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-login-submit">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          <span>Sign In</span>
+        </button>
+      </form>
+
+      <div class="login-footer-note">
+        <i class="fa-solid fa-shield-halved"></i> Protected LenderHomePage Portal
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container" id="app-container" style="display:none;">
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="logo-container">
@@ -90,6 +133,10 @@
           <div class="user-avatar" title="THREELabs Submitter">
             <span>TL</span>
           </div>
+          <button class="btn btn-secondary" id="btn-signout" title="Sign Out of Dev Tracker">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Sign Out</span>
+          </button>
         </div>
       </header>
 
