@@ -55,30 +55,15 @@ const pullRequests = [
 
 // Team Members Data
 const teamMembers = [
-  {
-    name: "Kevin",
-    role: "Engineering Lead",
-    initials: "KV",
-    activeTasks: 0,
-    completedPoints: 24,
-    status: "In Deep Work"
-  },
-  {
-    name: "Nishant",
-    role: "Senior Full Stack Dev",
-    initials: "NS",
-    activeTasks: 0,
-    completedPoints: 21,
-    status: "Available"
-  },
-  {
-    name: "Christie",
-    role: "Product & Engineering",
-    initials: "CH",
-    activeTasks: 0,
-    completedPoints: 19,
-    status: "Reviewing Jira Tickets"
-  }
+  { name: "Adriana", role: "Engineering Team", initials: "AD" },
+  { name: "Mark", role: "Engineering Team", initials: "MK" },
+  { name: "Rocky", role: "Engineering Team", initials: "RK" },
+  { name: "Amy", role: "Engineering Team", initials: "AM" },
+  { name: "Lisa", role: "Engineering Team", initials: "LS" },
+  { name: "Warren", role: "Engineering Team", initials: "WR" },
+  { name: "Kevin", role: "Engineering Lead", initials: "KV" },
+  { name: "Nishant", role: "Senior Full Stack Dev", initials: "NS" },
+  { name: "Christie", role: "Product & Engineering", initials: "CH" }
 ];
 
 // Fetch tasks from Cloud Database
@@ -285,11 +270,17 @@ function initSearchAndFilters() {
   const filterCategory = document.getElementById("filter-category");
   const filterPriority = document.getElementById("filter-priority");
 
-  // Keyboard shortcut '/' to search
+  // Keyboard shortcut '/' to search (only when not typing in form inputs/textareas)
   document.addEventListener("keydown", (e) => {
-    if (e.key === "/" && document.activeElement !== searchInput) {
-      e.preventDefault();
-      searchInput.focus();
+    if (e.key === "/") {
+      const activeEl = document.activeElement;
+      const tagName = activeEl ? activeEl.tagName.toUpperCase() : "";
+      const isTypingField = tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || (activeEl && activeEl.isContentEditable);
+      
+      if (!isTypingField) {
+        e.preventDefault();
+        if (searchInput) searchInput.focus();
+      }
     }
   });
 
@@ -498,7 +489,7 @@ function updateStats() {
   const total = tasksState.length;
   const openTasks = tasksState.filter(t => t.status !== "completed").length;
   const completed = tasksState.filter(t => t.status === "completed").length;
-  const submittersCount = new Set(tasksState.map(t => t.submitter)).size || 3;
+  const submittersCount = new Set(tasksState.map(t => t.submitter)).size || 9;
 
   if (document.getElementById("stat-total-tasks")) document.getElementById("stat-total-tasks").textContent = total;
   if (document.getElementById("stat-open-tasks")) document.getElementById("stat-open-tasks").textContent = openTasks;
