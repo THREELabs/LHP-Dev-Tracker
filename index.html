@@ -142,18 +142,18 @@
             <i class="fa-solid fa-list-check"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Total Tasks</span>
+            <span class="stat-label">Total Escalations</span>
             <span class="stat-value" id="stat-total-tasks">0</span>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon blue">
-            <i class="fa-solid fa-spinner"></i>
+            <i class="fa-solid fa-fire"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">In Progress / Review</span>
-            <span class="stat-value" id="stat-in-progress">0</span>
+            <span class="stat-label">Open Escalations</span>
+            <span class="stat-value" id="stat-open-tasks">0</span>
           </div>
         </div>
 
@@ -162,7 +162,7 @@
             <i class="fa-solid fa-circle-check"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Completed</span>
+            <span class="stat-label">Escalation Done</span>
             <span class="stat-value" id="stat-completed">0</span>
           </div>
         </div>
@@ -183,7 +183,7 @@
         <!-- View 1: Kanban Sprint Board -->
         <section id="view-board" class="view-panel active">
           <div class="board-header">
-            <h2>Sprint 24.8 Board</h2>
+            <h2>Escalation Tracking Board</h2>
             <div class="board-controls">
               <label for="filter-submitter">Submitter:</label>
               <select id="filter-submitter" class="select-filter">
@@ -216,48 +216,24 @@
           </div>
 
           <div class="kanban-board">
-            <!-- Column 1: Backlog -->
+            <!-- Column 1: Open Escalations -->
             <div class="kanban-column" data-status="backlog">
               <div class="column-header">
                 <div class="column-title">
                   <span class="status-indicator backlog"></span>
-                  <h3>Backlog</h3>
+                  <h3>Open Escalations</h3>
                 </div>
                 <span class="column-count" id="count-backlog">0</span>
               </div>
               <div class="kanban-cards-container" id="container-backlog"></div>
             </div>
 
-            <!-- Column 2: In Progress -->
-            <div class="kanban-column" data-status="in-progress">
-              <div class="column-header">
-                <div class="column-title">
-                  <span class="status-indicator in-progress"></span>
-                  <h3>In Progress</h3>
-                </div>
-                <span class="column-count" id="count-in-progress">0</span>
-              </div>
-              <div class="kanban-cards-container" id="container-in-progress"></div>
-            </div>
-
-            <!-- Column 3: Code Review -->
-            <div class="kanban-column" data-status="review">
-              <div class="column-header">
-                <div class="column-title">
-                  <span class="status-indicator review"></span>
-                  <h3>Code Review</h3>
-                </div>
-                <span class="column-count" id="count-review">0</span>
-              </div>
-              <div class="kanban-cards-container" id="container-review"></div>
-            </div>
-
-            <!-- Column 4: Completed -->
+            <!-- Column 2: Escalation Done -->
             <div class="kanban-column" data-status="completed">
               <div class="column-header">
                 <div class="column-title">
                   <span class="status-indicator completed"></span>
-                  <h3>Completed</h3>
+                  <h3>Escalation Done</h3>
                 </div>
                 <span class="column-count" id="count-completed">0</span>
               </div>

@@ -327,15 +327,11 @@ function filterAndRender() {
 function renderBoard(tasksToRender = tasksState) {
   const containers = {
     "backlog": document.getElementById("container-backlog"),
-    "in-progress": document.getElementById("container-in-progress"),
-    "review": document.getElementById("container-review"),
     "completed": document.getElementById("container-completed")
   };
 
   const counts = {
     "backlog": 0,
-    "in-progress": 0,
-    "review": 0,
     "completed": 0
   };
 
@@ -345,17 +341,17 @@ function renderBoard(tasksToRender = tasksState) {
   });
 
   tasksToRender.forEach(task => {
-    if (containers[task.status]) {
-      counts[task.status]++;
+    // Default any legacy or unrecognized status to backlog / open
+    const targetKey = (task.status === "completed") ? "completed" : "backlog";
+    if (containers[targetKey]) {
+      counts[targetKey]++;
       const card = createTaskCardElement(task);
-      containers[task.status].appendChild(card);
+      containers[targetKey].appendChild(card);
     }
   });
 
   // Update counts
   if (document.getElementById("count-backlog")) document.getElementById("count-backlog").textContent = counts["backlog"];
-  if (document.getElementById("count-in-progress")) document.getElementById("count-in-progress").textContent = counts["in-progress"];
-  if (document.getElementById("count-review")) document.getElementById("count-review").textContent = counts["review"];
   if (document.getElementById("count-completed")) document.getElementById("count-completed").textContent = counts["completed"];
 }
 
@@ -500,12 +496,12 @@ function renderTeam() {
 // Update Top Stat Cards & Dynamic Progress
 function updateStats() {
   const total = tasksState.length;
-  const inProgress = tasksState.filter(t => t.status === "in-progress" || t.status === "review").length;
+  const openTasks = tasksState.filter(t => t.status !== "completed").length;
   const completed = tasksState.filter(t => t.status === "completed").length;
   const submittersCount = new Set(tasksState.map(t => t.submitter)).size || 3;
 
   if (document.getElementById("stat-total-tasks")) document.getElementById("stat-total-tasks").textContent = total;
-  if (document.getElementById("stat-in-progress")) document.getElementById("stat-in-progress").textContent = inProgress;
+  if (document.getElementById("stat-open-tasks")) document.getElementById("stat-open-tasks").textContent = openTasks;
   if (document.getElementById("stat-completed")) document.getElementById("stat-completed").textContent = completed;
   if (document.getElementById("stat-active-submitters")) document.getElementById("stat-active-submitters").textContent = submittersCount;
 
@@ -569,14 +565,14 @@ function renderAnalytics() {
 
   // 2. Status Breakdown
   const statusConfig = [
-    { label: "Backlog / Open", key: "backlog", color: "#64748b" },
-    { label: "In Progress", key: "in-progress", color: "#0066ff" },
-    { label: "Code Review", key: "review", color: "#d97706" },
-    { label: "Completed", key: "completed", color: "#10b981" }
+    { label: "Open Escalations", key: "backlog", color: "#0066ff" },
+    { label: "Escalation Done", key: "completed", color: "#10b981" }
   ];
 
   const statusHtml = statusConfig.map(st => {
-    const count = tasksState.filter(t => t.status === st.key).length;
+    const count = st.key === "completed" 
+      ? tasksState.filter(t => t.status === "completed").length
+      : tasksState.filter(t => t.status !== "completed").length;
     const pct = Math.round((count / total) * 100);
     return `
       <div class="analytics-bar-item">
