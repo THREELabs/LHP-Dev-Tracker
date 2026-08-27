@@ -925,9 +925,12 @@ function initKPISubnav() {
 
       // Render tab specific visuals
       if (targetSubtab === "kpi-subtab-daily") renderDailyKPIReport();
+      if (targetSubtab === "kpi-subtab-team-info") renderKPITeamInfo();
       if (targetSubtab === "kpi-subtab-weekly") renderWeeklyKPISummary();
       if (targetSubtab === "kpi-subtab-trends") renderKPITrends();
       if (targetSubtab === "kpi-subtab-performance") renderKPIPerformance();
+      if (targetSubtab === "kpi-subtab-grade") renderKPIGrade();
+      if (targetSubtab === "kpi-subtab-numbers") renderKPINumbers();
       if (targetSubtab === "kpi-subtab-manage") renderKPIDbManager();
     });
   });
@@ -937,17 +940,274 @@ function initKPISubnav() {
   const parserDate = document.getElementById("parser-date");
   const dailyDate = document.getElementById("daily-report-date");
   const weeklyDate = document.getElementById("weekly-report-date");
+  const teamInfoDate = document.getElementById("team-info-date");
+  const gradeDate = document.getElementById("grade-date-input");
+  const numbersDate = document.getElementById("numbers-report-date");
 
   if (parserDate) parserDate.value = todayStr;
   if (dailyDate) dailyDate.value = todayStr;
   if (weeklyDate) weeklyDate.value = todayStr;
+  if (teamInfoDate) teamInfoDate.value = todayStr;
+  if (gradeDate) gradeDate.value = todayStr;
+  if (numbersDate) numbersDate.value = todayStr;
 
   initKPIParser();
   initKPIDaily();
+  initKPITeamInfo();
   initKPIWeekly();
   initKPITrends();
   initKPIPerformance();
+  initKPIGrade();
+  initKPINumbers();
   initKPIManage();
+  initKPIAdmin();
+}
+
+// Sub-Tab 4: Weekly Team Info
+function initKPITeamInfo() {
+  const btnPrev = document.getElementById("btn-team-info-prev");
+  const btnNext = document.getElementById("btn-team-info-next");
+  const dateInput = document.getElementById("team-info-date");
+
+  if (!dateInput) return;
+
+  const shiftWeek = (days) => {
+    const curr = new Date(dateInput.value || new Date());
+    curr.setDate(curr.getDate() + days);
+    dateInput.value = curr.toISOString().split("T")[0];
+    renderKPITeamInfo();
+  };
+
+  if (btnPrev) btnPrev.addEventListener("click", () => shiftWeek(-7));
+  if (btnNext) btnNext.addEventListener("click", () => shiftWeek(7));
+  dateInput.addEventListener("change", renderKPITeamInfo);
+}
+
+function renderKPITeamInfo() {
+  const summaryEl = document.getElementById("team-info-text-summary");
+  const visualsEl = document.getElementById("team-info-visuals");
+
+  if (!summaryEl || !visualsEl) return;
+
+  const recent700 = supportKPIState.slice(0, 700);
+  const metricTotals = {};
+  recent700.forEach(r => {
+    metricTotals[r.metric] = (metricTotals[r.metric] || 0) + Number(r.value);
+  });
+
+  let text = `--- WEEKLY TEAM METRICS ---\n\n🏆 TOTAL TEAM METRICS:\n`;
+  Object.entries(metricTotals).forEach(([met, val]) => {
+    text += `  • ${met}: ${val.toLocaleString()}\n`;
+  });
+  summaryEl.textContent = text;
+
+  const totalVal = Object.values(metricTotals).reduce((a, b) => a + b, 0) || 1;
+  visualsEl.innerHTML = Object.entries(metricTotals).map(([met, val]) => {
+    const pct = Math.round((val / totalVal) * 100);
+    return `
+      <div class="analytics-bar-item">
+        <div class="analytics-bar-label"><span>${met}</span><strong>${val.toLocaleString()} (${pct}%)</strong></div>
+        <div class="analytics-progress-bg"><div class="analytics-progress-fill" style="width: ${pct}%;"></div></div>
+      </div>
+    `;
+  }).join("");
+}
+
+// Sub-Tab 8: 100-Point Team Grading & ASCII Battle Engine
+function initKPIGrade() {
+  const btn = document.getElementById("btn-calculate-grade");
+  const dateInput = document.getElementById("grade-date-input");
+
+  if (btn) btn.addEventListener("click", renderKPIGrade);
+  if (dateInput) dateInput.addEventListener("change", renderKPIGrade);
+}
+
+function renderKPIGrade() {
+  const outputEl = document.getElementById("grade-report-output");
+  const asciiEl = document.getElementById("ascii-battle-box");
+
+  if (!outputEl) return;
+
+  const total = supportKPIState.slice(0, 700).reduce((a, b) => a + Number(b.value), 0);
+  const closed = supportKPIState.filter(k => k.metric === "Closed").slice(0, 700).reduce((a, b) => a + Number(b.value), 0);
+  const bottleneck = supportKPIState.filter(k => ["Waiting on Us", "Dev Review", "In Jira"].includes(k.metric)).slice(0, 700).reduce((a, b) => a + Number(b.value), 0);
+  const migrations = supportKPIState.filter(k => k.metric === "LHP Migrations").slice(0, 700).reduce((a, b) => a + Number(b.value), 0);
+
+  const resPct = total > 0 ? (closed / total) : 0;
+  const botPct = total > 0 ? (bottleneck / total) : 0;
+
+  const resScore = Math.min(50.0, (resPct / 0.65) * 50.0);
+  const botScore = botPct <= 0.05 ? 50.0 : (botPct >= 0.15 ? 0.0 : ((0.15 - botPct) / 0.10) * 50.0);
+  const bonus = migrations * 0.2;
+
+  const finalScore = Math.min(100.0, resScore + botScore + bonus);
+  let letterGrade = "F";
+  if (finalScore >= 90) letterGrade = "A";
+  else if (finalScore >= 80) letterGrade = "B";
+  else if (finalScore >= 70) letterGrade = "C";
+  else if (finalScore >= 60) letterGrade = "D";
+
+  outputEl.textContent = `
+========================================
+       WEEKLY TEAM GRADING REPORT
+========================================
+
+📊 BENCHMARK METRICS:
+  • Total Touched Volume: ${total.toLocaleString()}
+  • Tickets Closed: ${closed.toLocaleString()} (${(resPct * 100).toFixed(1)}%)
+  • Bottleneck Tickets: ${bottleneck.toLocaleString()} (${(botPct * 100).toFixed(1)}%)
+  • LHP Migrations: ${migrations}
+
+💯 SCORE BREAKDOWN:
+  • Resolution Score (Max 50): ${resScore.toFixed(1)} / 50.0
+  • Bottleneck Score (Max 50): ${botScore.toFixed(1)} / 50.0
+  • Extra Credit Bonus (+0.2/migration): +${bonus.toFixed(1)} pts
+
+🏆 FINAL OVERALL SCORE: ${finalScore.toFixed(1)} / 100.0
+GRADE: [ ${letterGrade} ]
+`;
+
+  if (asciiEl) {
+    asciiEl.textContent = `
+  /\\_/\\   FINAL SCORE: ${finalScore.toFixed(1)} / 100.0
+ ( o.o )  GRADE: [ ${letterGrade} ]
+  > ^ <   STATUS: ${letterGrade === 'A' ? 'VICTORY! ALL SLAS MET!' : 'SOLID PERFORMANCE! KEEP CLOSING!'}
+`;
+  }
+}
+
+// Sub-Tab 9: Team Numbers & Daily Targets (10 closed/day)
+function initKPINumbers() {
+  const btnPrev = document.getElementById("btn-numbers-prev");
+  const btnNext = document.getElementById("btn-numbers-next");
+  const dateInput = document.getElementById("numbers-report-date");
+
+  if (!dateInput) return;
+
+  const shiftWeek = (days) => {
+    const curr = new Date(dateInput.value || new Date());
+    curr.setDate(curr.getDate() + days);
+    dateInput.value = curr.toISOString().split("T")[0];
+    renderKPINumbers();
+  };
+
+  if (btnPrev) btnPrev.addEventListener("click", () => shiftWeek(-7));
+  if (btnNext) btnNext.addEventListener("click", () => shiftWeek(7));
+  dateInput.addEventListener("change", renderKPINumbers);
+}
+
+function renderKPINumbers() {
+  const cardsEl = document.getElementById("numbers-cards-grid");
+  const tableEl = document.getElementById("numbers-table-container");
+
+  if (!cardsEl || !tableEl) return;
+
+  const members = ["Christie", "Kevin", "Nishant"];
+  const target = 10;
+
+  cardsEl.innerHTML = members.map(m => {
+    const closedRecs = supportKPIState.filter(k => k.member === m && k.metric === "Closed");
+    const totalClosed = closedRecs.reduce((a, b) => a + Number(b.value), 0);
+    const avg = closedRecs.length > 0 ? (totalClosed / Math.min(closedRecs.length, 5)).toFixed(1) : 0;
+
+    let status = "Above Target";
+    let bg = "#eaf3de", fg = "#27500a";
+
+    if (avg < target - 1) {
+      status = "Below Target";
+      bg = "#fcebeb";
+      fg = "#791f1f";
+    } else if (avg < target) {
+      status = "Near Target";
+      bg = "#faeeda";
+      fg = "#633806";
+    }
+
+    return `
+      <div style="background: ${bg}; border: 1px solid #cbd5e1; border-radius: 6px; padding: 14px;">
+        <div style="font-weight: 700; font-size: 1rem; color: ${fg};">${m}</div>
+        <div style="font-size: 1.4rem; font-weight: 800; color: ${fg}; margin: 4px 0;">Avg: ${avg} closed/day</div>
+        <div style="font-size: 0.78rem; color: ${fg};">Target: ${target}/day | Total: ${totalClosed}</div>
+        <div style="margin-top: 6px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: ${fg};">${status}</div>
+      </div>
+    `;
+  }).join("");
+
+  tableEl.innerHTML = `
+    <table class="kpi-table" style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
+      <thead>
+        <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
+          <th style="padding: 8px 12px; text-align: left;">Member</th>
+          <th style="padding: 8px 12px; text-align: center;">Daily Avg Closed</th>
+          <th style="padding: 8px 12px; text-align: center;">Daily Target</th>
+          <th style="padding: 8px 12px; text-align: center;">Target Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${members.map(m => {
+          const closedRecs = supportKPIState.filter(k => k.member === m && k.metric === "Closed");
+          const totalClosed = closedRecs.reduce((a, b) => a + Number(b.value), 0);
+          const avg = closedRecs.length > 0 ? (totalClosed / Math.min(closedRecs.length, 5)).toFixed(1) : 0;
+          const status = avg >= 10 ? 'Above Target' : (avg >= 9 ? 'Near Target' : 'Below Target');
+          return `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 8px 12px; font-weight: 700; color: var(--lhp-blue);">${m}</td>
+              <td style="padding: 8px 12px; text-align: center; font-weight: 800;">${avg}</td>
+              <td style="padding: 8px 12px; text-align: center;">10 / day</td>
+              <td style="padding: 8px 12px; text-align: center;"><span class="priority-pill priority-low">${status}</span></td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+// Sub-Tab 10: Admin Backup & Restore
+function initKPIAdmin() {
+  const btnBackup = document.getElementById("btn-backup-admin");
+  const btnRestore = document.getElementById("btn-restore-admin");
+  const fileInput = document.getElementById("restore-file-input");
+
+  if (btnBackup) {
+    btnBackup.addEventListener("click", () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(supportKPIState, null, 2));
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `support_kpis_backup_${new Date().toISOString().split("T")[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    });
+  }
+
+  if (btnRestore && fileInput) {
+    btnRestore.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (Array.isArray(parsed)) {
+            if (confirm("WARNING: This will restore database records. Proceed?")) {
+              supportKPIState = parsed;
+              saveTasksState();
+              renderKPI();
+              alert("Database restored successfully!");
+            }
+          } else {
+            alert("Invalid JSON format.");
+          }
+        } catch (err) {
+          alert("Error parsing backup JSON file: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
 }
 
 // Sub-Tab 2: Auto-Parser (Matches kpi.py text regex parsing)

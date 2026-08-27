@@ -275,15 +275,19 @@
             <p>Comprehensive Support Ticket KPIs, SLA Compliance, Daily/Weekly Reports, Trend Analytics, & Auto-Parser.</p>
           </div>
 
-          <!-- KPI Sub-Tab Navigation Bar -->
+          <!-- KPI Sub-Tab Navigation Bar (All 10 Python App Tabs) -->
           <div class="kpi-subnav-bar">
             <button class="kpi-subnav-item active" data-subtab="kpi-subtab-overview"><i class="fa-solid fa-gauge-high"></i> Overview</button>
-            <button class="kpi-subnav-item" data-subtab="kpi-subtab-entry"><i class="fa-solid fa-pen-to-square"></i> Submit Daily KPIs</button>
-            <button class="kpi-subnav-item" data-subtab="kpi-subtab-daily"><i class="fa-solid fa-calendar-day"></i> Daily Report</button>
-            <button class="kpi-subnav-item" data-subtab="kpi-subtab-weekly"><i class="fa-solid fa-calendar-week"></i> Weekly Summary</button>
-            <button class="kpi-subnav-item" data-subtab="kpi-subtab-trends"><i class="fa-solid fa-chart-line"></i> Trend Analytics</button>
-            <button class="kpi-subnav-item" data-subtab="kpi-subtab-performance"><i class="fa-solid fa-robot"></i> AI Performance Insights</button>
-            <button class="kpi-subnav-item" data-subtab="kpi-subtab-manage"><i class="fa-solid fa-database"></i> Manage Database</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-entry"><i class="fa-solid fa-pen-to-square"></i> 📝 Daily Entry</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-manage"><i class="fa-solid fa-gear"></i> ⚙️ Manage / Delete</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-daily"><i class="fa-solid fa-calendar-day"></i> 📅 Daily Report</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-team-info"><i class="fa-solid fa-chart-pie"></i> 📊 Weekly Team Info</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-weekly"><i class="fa-solid fa-calendar-week"></i> 🗓️ Weekly Individual Info</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-trends"><i class="fa-solid fa-chart-line"></i> 📈 User Trends</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-performance"><i class="fa-solid fa-bullseye"></i> 🎯 Performance Health</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-grade"><i class="fa-solid fa-trophy"></i> 🏆 Team Grading</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-numbers"><i class="fa-solid fa-arrow-down-1-9"></i> 🔢 Team Numbers</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-admin"><i class="fa-solid fa-floppy-disk"></i> 💾 Backup / Restore</button>
           </div>
 
           <!-- Sub-Tab 1: Overview -->
@@ -564,6 +568,156 @@
                   </thead>
                   <tbody id="kpi-db-full-body"></tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 4: Weekly Team Info -->
+          <div id="kpi-subtab-team-info" class="kpi-subpanel">
+            <div class="analytics-card">
+              <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                  <h3><i class="fa-solid fa-chart-pie" style="color: var(--lhp-blue); margin-right: 6px;"></i>Weekly Team Metrics & Distribution</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Mon-Fri aggregate team metric totals & workload distribution.</p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button class="btn btn-secondary" id="btn-team-info-prev"><i class="fa-solid fa-chevron-left"></i> Prev Week</button>
+                  <input type="date" id="team-info-date" style="padding: 6px 10px;">
+                  <button class="btn btn-secondary" id="btn-team-info-next">Next Week <i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+              </div>
+
+              <div class="analytics-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="analytics-card">
+                  <h4>Total Team Metrics Summary</h4>
+                  <div id="team-info-text-summary" style="font-family: monospace; font-size: 0.8rem; background: #f8fafc; padding: 12px; border-radius: 4px; border: 1px solid #e2e8f0; white-space: pre-wrap;"></div>
+                </div>
+                <div class="analytics-card">
+                  <h4>Workload Distribution Share</h4>
+                  <div id="team-info-visuals"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 8: Team Grading & Metric Algorithm -->
+          <div id="kpi-subtab-grade" class="kpi-subpanel">
+            <div class="analytics-card">
+              <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                  <h3><i class="fa-solid fa-trophy" style="color: var(--lhp-blue); margin-right: 6px;"></i>Team Grading & 100-Point Algorithm Evaluation</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Resolution Rate (50 pts) + Bottleneck Rate (50 pts) + Extra Credit (LHP Migrations).</p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <label style="font-size: 0.78rem; font-weight: 600;">Week Ending:</label>
+                  <input type="date" id="grade-date-input" style="padding: 6px 10px;">
+                  <button class="btn btn-primary" id="btn-calculate-grade"><i class="fa-solid fa-calculator"></i> Calculate Team Grade</button>
+                </div>
+              </div>
+
+              <div class="analytics-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="analytics-card">
+                  <h4>Weekly Grading Report Output</h4>
+                  <div id="grade-report-output" style="font-family: monospace; font-size: 0.82rem; line-height: 1.5; background: #ffffff; padding: 14px; border-radius: 6px; border: 1px solid #cbd5e1; white-space: pre-wrap;"></div>
+                  
+                  <h4 style="margin-top: 14px;">ASCII Battle Engine Display</h4>
+                  <div id="ascii-battle-box" style="font-family: monospace; font-size: 0.75rem; background: #000000; color: #00ff00; padding: 14px; border-radius: 6px; white-space: pre; overflow-x: auto; height: 160px;"></div>
+                </div>
+
+                <div class="analytics-card" style="background: #f8fafc;">
+                  <h4>How The Grading System Works</h4>
+                  <div style="font-family: monospace; font-size: 0.78rem; color: var(--text-main); white-space: pre-wrap; line-height: 1.45;">
+========================================
+    THE GRADING ALGORITHM EXPLAINED
+========================================
+
+The grading system uses a 100-point scale.
+It measures the Team's performance using 
+two primary support benchmarks.
+
+----------------------------------------
+1. RESOLUTION RATE (Max 50 Points)
+----------------------------------------
+GOAL: Close 65% or more of the tickets 
+      the team touched during the week.
+      
+• 65% or higher = 50 points
+• Below 65% scales down proportionally.
+
+----------------------------------------
+2. BOTTLENECK RATE (Max 50 Points)
+----------------------------------------
+GOAL: Keep stuck tickets under 5% 
+      of total ticket volume. Stalled 
+      tickets include "Waiting on Us", 
+      "Dev Review", and "In Jira".
+      
+• 5% or less = 50 points
+• 15% or higher = 0 points
+• Between 5% and 15% scales down 
+  proportionally.
+
+----------------------------------------
+3. EXTRA CREDIT (LHP Migrations)
+----------------------------------------
+GOAL: Complete LHP Migrations for bonus.
+
+• Each LHP Migration adds +0.2 points to 
+  the final score (acts as Extra Credit).
+
+----------------------------------------
+      FINAL LETTER GRADE SCALE
+----------------------------------------
+  A : 90 - 100 points
+  B : 80 - 89.9 points
+  C : 70 - 79.9 points
+  D : 60 - 69.9 points
+  F : Below 60 points
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 9: Team Numbers & Daily Target Cards -->
+          <div id="kpi-subtab-numbers" class="kpi-subpanel">
+            <div class="analytics-card">
+              <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                  <h3><i class="fa-solid fa-arrow-down-1-9" style="color: var(--lhp-blue); margin-right: 6px;"></i>Team Numbers & Daily Closed Target Benchmarks</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Track daily closed ticket output vs 10 closed/day target thresholds.</p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button class="btn btn-secondary" id="btn-numbers-prev"><i class="fa-solid fa-chevron-left"></i> Prev Week</button>
+                  <input type="date" id="numbers-report-date" style="padding: 6px 10px;">
+                  <button class="btn btn-secondary" id="btn-numbers-next">Next Week <i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+              </div>
+
+              <!-- Summary Cards per Member -->
+              <div id="numbers-cards-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px;"></div>
+
+              <div class="analytics-card">
+                <h4>Daily Closed Breakdown by Member (Mon-Fri)</h4>
+                <div id="numbers-table-container"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 10: Backup / Restore DB -->
+          <div id="kpi-subtab-admin" class="kpi-subpanel">
+            <div class="analytics-card">
+              <h3><i class="fa-solid fa-floppy-disk" style="color: var(--lhp-blue); margin-right: 6px;"></i>Database Backup & Restore Tools</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">Download or restore support_kpis.db data records anytime.</p>
+
+              <div style="display: flex; gap: 16px; max-width: 500px;">
+                <button class="btn btn-primary" id="btn-backup-admin" style="padding: 12px 20px; flex: 1;">
+                  <i class="fa-solid fa-download"></i> Backup Database (JSON)
+                </button>
+                <button class="btn btn-secondary" id="btn-restore-admin" style="padding: 12px 20px; flex: 1;">
+                  <i class="fa-solid fa-upload"></i> Restore Database
+                </button>
+                <input type="file" id="restore-file-input" accept=".json" style="display: none;">
               </div>
             </div>
           </div>
