@@ -1040,6 +1040,8 @@ function initKPISubnav() {
   if (gradeDate) gradeDate.value = todayStr;
   if (numbersDate) numbersDate.value = todayStr;
 
+  initKPISubnav();
+  initKPIModal();
   initKPIParser();
   initKPIDaily();
   initKPITeamInfo();
