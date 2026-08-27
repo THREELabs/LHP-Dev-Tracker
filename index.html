@@ -478,22 +478,40 @@
             </div>
           </div>
 
-          <!-- Sub-Tab 5: Trend Analytics -->
+          <!-- Sub-Tab 5: Trend Analytics (User Trends) -->
           <div id="kpi-subtab-trends" class="kpi-subpanel">
             <div class="analytics-card">
               <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <div>
-                  <h3><i class="fa-solid fa-chart-line" style="color: var(--lhp-blue); margin-right: 6px;"></i>Workload & Ticket Category Trends</h3>
-                  <p style="font-size: 0.8rem; color: var(--text-muted);">Historical multi-week workload trajectory and resolution velocity.</p>
+                  <h3><i class="fa-solid fa-chart-line" style="color: var(--lhp-blue); margin-right: 6px;"></i>Rep User Trends & Individual Workload Trajectory</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Historical performance trends and workload categories for individual representative users.</p>
                 </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                  <label style="font-size: 0.78rem; font-weight: 600;">Time Window:</label>
-                  <select id="trend-window-select" style="padding: 6px 10px;">
-                    <option value="4">Last 4 Weeks</option>
-                    <option value="8" selected>Last 8 Weeks</option>
-                    <option value="12">Last 12 Weeks</option>
-                    <option value="24">Last 24 Weeks</option>
-                  </select>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <div>
+                    <label style="font-size: 0.78rem; font-weight: 600; margin-right: 4px;">Select Rep User:</label>
+                    <select id="trend-rep-select" style="padding: 6px 10px;">
+                      <option value="all">All Representative Users</option>
+                      <option value="Christie">Christie</option>
+                      <option value="Kevin">Kevin</option>
+                      <option value="Nishant">Nishant</option>
+                      <option value="Adriana">Adriana</option>
+                      <option value="Mark">Mark</option>
+                      <option value="Rocky">Rocky</option>
+                      <option value="Amy">Amy</option>
+                      <option value="Lisa">Lisa</option>
+                      <option value="Warren">Warren</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 0.78rem; font-weight: 600; margin-right: 4px;">Time Window:</label>
+                    <select id="trend-window-select" style="padding: 6px 10px;">
+                      <option value="1">1 Week</option>
+                      <option value="2">2 Weeks</option>
+                      <option value="4">4 Weeks</option>
+                      <option value="8" selected>8 Weeks</option>
+                      <option value="all">All Data</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 

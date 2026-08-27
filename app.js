@@ -1099,25 +1099,44 @@ function initKPINumbers() {
 function renderKPINumbers() {
   const cardsEl = document.getElementById("numbers-cards-grid");
   const tableEl = document.getElementById("numbers-table-container");
+  const dateInput = document.getElementById("numbers-report-date");
 
-  if (!cardsEl || !tableEl) return;
+  if (!cardsEl || !tableEl || !dateInput) return;
+
+  // Calculate Monday and Friday of selected date's week
+  const selDate = new Date(dateInput.value || new Date());
+  const dayOfWeek = selDate.getDay(); // 0 is Sun, 1 is Mon...
+  const diffToMon = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+  
+  const monday = new Date(selDate);
+  monday.setDate(selDate.getDate() + diffToMon);
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+
+  const monStr = monday.toISOString().split("T")[0];
+  const friStr = friday.toISOString().split("T")[0];
 
   const members = ["Christie", "Kevin", "Nishant"];
   const target = 10;
 
   cardsEl.innerHTML = members.map(m => {
-    const closedRecs = supportKPIState.filter(k => k.member === m && k.metric === "Closed");
-    const totalClosed = closedRecs.reduce((a, b) => a + Number(b.value), 0);
-    const avg = closedRecs.length > 0 ? (totalClosed / Math.min(closedRecs.length, 5)).toFixed(1) : 0;
+    const weekClosedRecs = supportKPIState.filter(k => {
+      return k.member === m && k.metric === "Closed" && k.date >= monStr && k.date <= friStr;
+    });
+
+    const totalClosed = weekClosedRecs.reduce((a, b) => a + Number(b.value), 0);
+    const daysLogged = new Set(weekClosedRecs.map(k => k.date)).size || 1;
+    const avgVal = (totalClosed / daysLogged);
+    const avgStr = avgVal.toFixed(1);
 
     let status = "Above Target";
     let bg = "#eaf3de", fg = "#27500a";
 
-    if (avg < target - 1) {
+    if (avgVal < target - 1) {
       status = "Below Target";
       bg = "#fcebeb";
       fg = "#791f1f";
-    } else if (avg < target) {
+    } else if (avgVal < target) {
       status = "Near Target";
       bg = "#faeeda";
       fg = "#633806";
@@ -1126,8 +1145,8 @@ function renderKPINumbers() {
     return `
       <div style="background: ${bg}; border: 1px solid #cbd5e1; border-radius: 6px; padding: 14px;">
         <div style="font-weight: 700; font-size: 1rem; color: ${fg};">${m}</div>
-        <div style="font-size: 1.4rem; font-weight: 800; color: ${fg}; margin: 4px 0;">Avg: ${avg} closed/day</div>
-        <div style="font-size: 0.78rem; color: ${fg};">Target: ${target}/day | Total: ${totalClosed}</div>
+        <div style="font-size: 1.4rem; font-weight: 800; color: ${fg}; margin: 4px 0;">Avg: ${avgStr} closed/day</div>
+        <div style="font-size: 0.78rem; color: ${fg};">Target: ${target}/day | Week Total: ${totalClosed} (${daysLogged} days)</div>
         <div style="margin-top: 6px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: ${fg};">${status}</div>
       </div>
     `;
@@ -1138,6 +1157,8 @@ function renderKPINumbers() {
       <thead>
         <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
           <th style="padding: 8px 12px; text-align: left;">Member</th>
+          <th style="padding: 8px 12px; text-align: center;">Week Total Closed</th>
+          <th style="padding: 8px 12px; text-align: center;">Days Logged</th>
           <th style="padding: 8px 12px; text-align: center;">Daily Avg Closed</th>
           <th style="padding: 8px 12px; text-align: center;">Daily Target</th>
           <th style="padding: 8px 12px; text-align: center;">Target Status</th>
@@ -1145,14 +1166,20 @@ function renderKPINumbers() {
       </thead>
       <tbody>
         ${members.map(m => {
-          const closedRecs = supportKPIState.filter(k => k.member === m && k.metric === "Closed");
-          const totalClosed = closedRecs.reduce((a, b) => a + Number(b.value), 0);
-          const avg = closedRecs.length > 0 ? (totalClosed / Math.min(closedRecs.length, 5)).toFixed(1) : 0;
-          const status = avg >= 10 ? 'Above Target' : (avg >= 9 ? 'Near Target' : 'Below Target');
+          const weekClosedRecs = supportKPIState.filter(k => {
+            return k.member === m && k.metric === "Closed" && k.date >= monStr && k.date <= friStr;
+          });
+          const totalClosed = weekClosedRecs.reduce((a, b) => a + Number(b.value), 0);
+          const daysLogged = new Set(weekClosedRecs.map(k => k.date)).size || 1;
+          const avgVal = (totalClosed / daysLogged);
+          const avgStr = avgVal.toFixed(1);
+          const status = avgVal >= 10 ? 'Above Target' : (avgVal >= 9 ? 'Near Target' : 'Below Target');
           return `
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 8px 12px; font-weight: 700; color: var(--lhp-blue);">${m}</td>
-              <td style="padding: 8px 12px; text-align: center; font-weight: 800;">${avg}</td>
+              <td style="padding: 8px 12px; text-align: center; font-weight: 700;">${totalClosed}</td>
+              <td style="padding: 8px 12px; text-align: center;">${daysLogged} days</td>
+              <td style="padding: 8px 12px; text-align: center; font-weight: 800;">${avgStr}</td>
               <td style="padding: 8px 12px; text-align: center;">10 / day</td>
               <td style="padding: 8px 12px; text-align: center;"><span class="priority-pill priority-low">${status}</span></td>
             </tr>
@@ -1403,46 +1430,75 @@ function renderWeeklyKPISummary() {
   totalsEl.innerHTML = tableHtml;
 }
 
-// Sub-Tab 5: Multi-Week Trend Analytics
+// Sub-Tab 5: Multi-Week Trend Analytics (Rep User Trends)
 function initKPITrends() {
-  const select = document.getElementById("trend-window-select");
-  if (select) select.addEventListener("change", renderKPITrends);
+  const repSelect = document.getElementById("trend-rep-select");
+  const winSelect = document.getElementById("trend-window-select");
+
+  if (repSelect) repSelect.addEventListener("change", renderKPITrends);
+  if (winSelect) winSelect.addEventListener("change", renderKPITrends);
 }
 
 function renderKPITrends() {
   const container = document.getElementById("trends-visual-container");
   if (!container) return;
 
-  const windowWeeks = Number(document.getElementById("trend-window-select")?.value) || 8;
-  const metrics = ["Waiting on Contact", "Waiting on Us", "Dev Review", "In Jira", "Closed"];
+  const selectedRep = document.getElementById("trend-rep-select")?.value || "all";
+  const windowStr = document.getElementById("trend-window-select")?.value || "8";
 
-  const totals = {};
-  metrics.forEach(m => {
-    totals[m] = supportKPIState.filter(k => k.metric === m).reduce((a, b) => a + Number(b.value), 0);
-  });
+  let filtered = supportKPIState;
+  if (selectedRep !== "all") {
+    filtered = filtered.filter(k => k.member === selectedRep);
+  }
 
-  const maxVal = Math.max(...Object.values(totals), 1);
+  // Workload Categories matching kpi.py: Resolved, Backlog, Bottleneck
+  const resolvedVal = filtered.filter(k => k.metric === "Closed").reduce((a, b) => a + Number(b.value), 0);
+  const backlogVal = filtered.filter(k => ["Waiting on Contact", "Backlog Health/Activation", "Customer Response"].includes(k.metric)).reduce((a, b) => a + Number(b.value), 0);
+  const bottleneckVal = filtered.filter(k => ["Waiting on Us", "Dev Review", "In Jira"].includes(k.metric)).reduce((a, b) => a + Number(b.value), 0);
+  const totalVal = resolvedVal + backlogVal + bottleneckVal || 1;
+
+  const resPct = Math.round((resolvedVal / totalVal) * 100);
+  const backPct = Math.round((backlogVal / totalVal) * 100);
+  const botPct = Math.round((bottleneckVal / totalVal) * 100);
+
+  const repTitle = selectedRep === "all" ? "Entire Team" : `${selectedRep}'s Individual Performance Trajectory`;
 
   container.innerHTML = `
-    <div style="font-size: 0.82rem; font-weight: 700; margin-bottom: 14px; color: var(--text-main);">
-      Aggregated Trajectory Across ${windowWeeks}-Week Window
+    <div style="font-size: 0.88rem; font-weight: 700; margin-bottom: 14px; color: var(--text-main);">
+      📊 ${repTitle} (${windowStr === 'all' ? 'All Data' : 'Last ' + windowStr + ' Weeks'})
     </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px;">
+      <div style="background: #f0fdf4; border: 1px solid #a7f3d0; border-radius: 6px; padding: 12px;">
+        <div style="font-size: 0.72rem; color: #047857; text-transform: uppercase; font-weight: 700;">Resolved Tickets</div>
+        <div style="font-size: 1.3rem; font-weight: 800; color: #065f46; margin: 2px 0;">${resolvedVal.toLocaleString()}</div>
+        <div style="font-size: 0.75rem; color: #047857;">${resPct}% of total volume</div>
+      </div>
+      <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 12px;">
+        <div style="font-size: 0.72rem; color: #1d4ed8; text-transform: uppercase; font-weight: 700;">Active Backlog</div>
+        <div style="font-size: 1.3rem; font-weight: 800; color: #1e40af; margin: 2px 0;">${backlogVal.toLocaleString()}</div>
+        <div style="font-size: 0.75rem; color: #1d4ed8;">${backPct}% of total volume</div>
+      </div>
+      <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 12px;">
+        <div style="font-size: 0.72rem; color: #b45309; text-transform: uppercase; font-weight: 700;">Bottleneck Tickets</div>
+        <div style="font-size: 1.3rem; font-weight: 800; color: #92400e; margin: 2px 0;">${bottleneckVal.toLocaleString()}</div>
+        <div style="font-size: 0.75rem; color: #b45309;">${botPct}% of total volume</div>
+      </div>
+    </div>
+
     <div class="analytics-bar-list">
-      ${metrics.map(m => {
-        const val = totals[m] || 0;
-        const pct = Math.round((val / maxVal) * 100);
-        return `
-          <div class="analytics-bar-item">
-            <div class="analytics-bar-label">
-              <span><strong>${m}</strong></span>
-              <strong>${val.toLocaleString()} total (${pct}%)</strong>
-            </div>
-            <div class="analytics-progress-bg">
-              <div class="analytics-progress-fill" style="width: ${pct}%;"></div>
-            </div>
-          </div>
-        `;
-      }).join("")}
+      <div class="analytics-bar-item">
+        <div class="analytics-bar-label"><span>Resolved Velocity</span><strong>${resolvedVal.toLocaleString()} tickets (${resPct}%)</strong></div>
+        <div class="analytics-progress-bg"><div class="analytics-progress-fill green-fill" style="width: ${resPct}%;"></div></div>
+      </div>
+      <div class="analytics-bar-item">
+        <div class="analytics-bar-label"><span>Backlog Clearance</span><strong>${backlogVal.toLocaleString()} tickets (${backPct}%)</strong></div>
+        <div class="analytics-progress-bg"><div class="analytics-progress-fill" style="width: ${backPct}%;"></div></div>
+      </div>
+      <div class="analytics-bar-item">
+        <div class="analytics-bar-label"><span>Bottleneck Share (Stalled)</span><strong>${bottleneckVal.toLocaleString()} tickets (${botPct}%)</strong></div>
+        <div class="analytics-progress-bg"><div class="analytics-progress-fill amber-fill" style="width: ${botPct}%;"></div></div>
+      </div>
     </div>
   `;
 }
