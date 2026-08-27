@@ -66,9 +66,17 @@ const teamMembers = [
   { name: "Christie", role: "Product & Engineering", initials: "CH" }
 ];
 
+let lastCloudSaveTime = 0;
+
 // Fetch tasks from Cloud Database
 async function fetchTasksFromCloud() {
   const badgeText = document.getElementById("cloud-badge-text");
+
+  // Skip cloud overwrite if a local save or addition happened within the last 5 seconds
+  if (Date.now() - lastCloudSaveTime < 5000) {
+    return false;
+  }
+
   try {
     const res = await fetch(`${JSONBIN_URL}/latest`);
     if (res.ok) {
@@ -93,6 +101,7 @@ async function fetchTasksFromCloud() {
 
 // Save tasks to Cloud Database & LocalStorage
 async function saveTasksState() {
+  lastCloudSaveTime = Date.now();
   saveTasksToLocalStorage();
   const badgeText = document.getElementById("cloud-badge-text");
   if (badgeText) badgeText.textContent = "Saving...";
@@ -331,7 +340,10 @@ function renderBoard(tasksToRender = tasksState) {
     if (container) container.innerHTML = "";
   });
 
-  tasksToRender.forEach(task => {
+  // Sort tasks so starred tasks appear at the top of their column
+  const sortedTasks = [...tasksToRender].sort((a, b) => (b.isStarred ? 1 : 0) - (a.isStarred ? 1 : 0));
+
+  sortedTasks.forEach(task => {
     // Default any legacy or unrecognized status to backlog / open
     const targetKey = (task.status === "completed") ? "completed" : "backlog";
     if (containers[targetKey]) {
@@ -349,7 +361,7 @@ function renderBoard(tasksToRender = tasksState) {
 // Create Card DOM Element
 function createTaskCardElement(task) {
   const card = document.createElement("div");
-  card.className = "task-card";
+  card.className = `task-card ${task.isStarred ? 'starred' : ''}`;
   card.setAttribute("draggable", "true");
   card.dataset.id = task.id;
 
@@ -372,6 +384,9 @@ function createTaskCardElement(task) {
   card.innerHTML = `
     <div class="task-card-header">
       <div class="header-left-tags">
+        <button class="btn-star-card ${task.isStarred ? 'starred' : ''}" title="${task.isStarred ? 'Unstar escalation' : 'Star escalation'}">
+          <i class="${task.isStarred ? 'fa-solid fa-star' : 'fa-regular fa-star'}"></i>
+        </button>
         <span class="category-tag ${categoryClass}">${task.category}</span>
         ${jiraBadgeHtml}
       </div>
@@ -391,6 +406,19 @@ function createTaskCardElement(task) {
     </div>
   `;
 
+  // Star event listener
+  const btnStar = card.querySelector(".btn-star-card");
+  if (btnStar) {
+    btnStar.addEventListener("click", (e) => {
+      e.stopPropagation();
+      task.isStarred = !task.isStarred;
+      lastCloudSaveTime = Date.now();
+      saveTasksState();
+      filterAndRender();
+      updateStats();
+    });
+  }
+
   // Delete event listener
   const btnDelete = card.querySelector(".btn-delete-card");
   if (btnDelete) {
@@ -398,8 +426,9 @@ function createTaskCardElement(task) {
       e.stopPropagation();
       if (confirm(`Are you sure you want to delete task ${task.id}?`)) {
         tasksState = tasksState.filter(t => t.id !== task.id);
+        lastCloudSaveTime = Date.now();
         saveTasksState();
-        renderBoard();
+        filterAndRender();
         updateStats();
       }
     });
@@ -653,12 +682,25 @@ function initModal() {
       category: document.getElementById("task-category").value,
       priority: document.getElementById("task-priority").value,
       desc: document.getElementById("task-desc").value || "No description provided.",
-      status: "backlog"
+      status: "backlog",
+      isStarred: false
     };
 
     tasksState.unshift(newTask);
+    lastCloudSaveTime = Date.now();
     saveTasksState();
-    renderBoard();
+
+    // Reset search & filters so newly created task is never hidden by active filters
+    const searchInput = document.getElementById("task-search");
+    if (searchInput) searchInput.value = "";
+    const filterSubmitter = document.getElementById("filter-submitter");
+    if (filterSubmitter) filterSubmitter.value = "all";
+    const filterCategory = document.getElementById("filter-category");
+    if (filterCategory) filterCategory.value = "all";
+    const filterPriority = document.getElementById("filter-priority");
+    if (filterPriority) filterPriority.value = "all";
+
+    filterAndRender();
     updateStats();
     closeModal();
   });

@@ -732,6 +732,33 @@ body {
   box-shadow: 0 6px 18px rgba(0, 102, 255, 0.08);
 }
 
+/* Starred Task Card Styling */
+.task-card.starred {
+  border-left: 4px solid #f59e0b;
+  background: #fffdfb;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.12);
+}
+
+.btn-star-card {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.05rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: var(--transition-fast);
+}
+
+.btn-star-card:hover {
+  color: #f59e0b;
+  transform: scale(1.2);
+}
+
+.btn-star-card.starred {
+  color: #f59e0b;
+}
+
 .task-card-header {
   display: flex;
   justify-content: space-between;
