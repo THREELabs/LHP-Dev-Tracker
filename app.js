@@ -992,38 +992,45 @@ function initKPIModal() {
   });
 }
 
-// KPI Sub-Tab Navigation & Module Handler
+// Global Failproof KPI Sub-Tab Navigation Handler
+window.switchKPISubtab = function(item) {
+  if (!item) return;
+  const targetSubtab = item.getAttribute("data-subtab") || item.dataset.subtab;
+  if (!targetSubtab) return;
+
+  const subnavItems = document.querySelectorAll(".kpi-subnav-item");
+  const subpanels = document.querySelectorAll(".kpi-subpanel");
+
+  subnavItems.forEach(i => i.classList.remove("active"));
+  item.classList.add("active");
+
+  subpanels.forEach(panel => {
+    if (panel.id === targetSubtab) {
+      panel.classList.add("active");
+      panel.style.display = "block";
+    } else {
+      panel.classList.remove("active");
+      panel.style.display = "none";
+    }
+  });
+
+  // Render tab specific visuals
+  if (targetSubtab === "kpi-subtab-daily") renderDailyKPIReport();
+  if (targetSubtab === "kpi-subtab-team-info") renderKPITeamInfo();
+  if (targetSubtab === "kpi-subtab-weekly") renderWeeklyKPISummary();
+  if (targetSubtab === "kpi-subtab-trends") renderKPITrends();
+  if (targetSubtab === "kpi-subtab-performance") renderKPIPerformance();
+  if (targetSubtab === "kpi-subtab-grade") renderKPIGrade();
+  if (targetSubtab === "kpi-subtab-numbers") renderKPINumbers();
+  if (targetSubtab === "kpi-subtab-manage") renderKPIDbManager();
+};
+
 function initKPISubnav() {
   document.addEventListener("click", (e) => {
     const item = e.target.closest(".kpi-subnav-item");
-    if (!item) return;
-
-    const targetSubtab = item.getAttribute("data-subtab") || item.dataset.subtab;
-    if (!targetSubtab) return;
-
-    const subnavItems = document.querySelectorAll(".kpi-subnav-item");
-    const subpanels = document.querySelectorAll(".kpi-subpanel");
-
-    subnavItems.forEach(i => i.classList.remove("active"));
-    item.classList.add("active");
-
-    subpanels.forEach(panel => {
-      if (panel.id === targetSubtab) {
-        panel.classList.add("active");
-      } else {
-        panel.classList.remove("active");
-      }
-    });
-
-    // Render tab specific visuals
-    if (targetSubtab === "kpi-subtab-daily") renderDailyKPIReport();
-    if (targetSubtab === "kpi-subtab-team-info") renderKPITeamInfo();
-    if (targetSubtab === "kpi-subtab-weekly") renderWeeklyKPISummary();
-    if (targetSubtab === "kpi-subtab-trends") renderKPITrends();
-    if (targetSubtab === "kpi-subtab-performance") renderKPIPerformance();
-    if (targetSubtab === "kpi-subtab-grade") renderKPIGrade();
-    if (targetSubtab === "kpi-subtab-numbers") renderKPINumbers();
-    if (targetSubtab === "kpi-subtab-manage") renderKPIDbManager();
+    if (item) {
+      window.switchKPISubtab(item);
+    }
   });
 
   // Init date pickers
