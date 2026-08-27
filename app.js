@@ -291,6 +291,7 @@ function initDeleteToggle() {
 function initNavigation() {
   const navItems = document.querySelectorAll(".nav-item");
   const viewPanels = document.querySelectorAll(".view-panel");
+  const statsGrid = document.querySelector(".stats-grid");
 
   navItems.forEach(item => {
     item.addEventListener("click", (e) => {
@@ -307,6 +308,15 @@ function initNavigation() {
           panel.classList.remove("active");
         }
       });
+
+      // Hide top escalation stats row on KPI Tracker page
+      if (statsGrid) {
+        if (targetView === "kpi") {
+          statsGrid.style.display = "none";
+        } else {
+          statsGrid.style.display = "grid";
+        }
+      }
     });
   });
 }
