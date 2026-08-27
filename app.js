@@ -68,7 +68,7 @@ const teamMembers = [
 
 let lastCloudSaveTime = 0;
 
-// Fetch tasks from Cloud Database
+// Fetch tasks & KPIs from Cloud Database
 async function fetchTasksFromCloud() {
   const badgeText = document.getElementById("cloud-badge-text");
 
@@ -81,14 +81,29 @@ async function fetchTasksFromCloud() {
     const res = await fetch(`${JSONBIN_URL}/latest`);
     if (res.ok) {
       const data = await res.json();
-      const fetchedTasks = Array.isArray(data.record) 
-        ? data.record 
-        : (data.record && Array.isArray(data.record.tasks) ? data.record.tasks : []);
+      const record = data.record;
+      
+      const fetchedTasks = Array.isArray(record) 
+        ? record 
+        : (record && Array.isArray(record.tasks) ? record.tasks : []);
       
       tasksState = fetchedTasks;
       saveTasksToLocalStorage();
+
+      // Cloud KPI Sync
+      if (record && Array.isArray(record.kpis) && record.kpis.length > 0) {
+        const cloudKpis = record.kpis;
+        const existingIds = new Set(supportKPIState.map(k => k.id));
+        cloudKpis.forEach(ck => {
+          if (!existingIds.has(ck.id)) {
+            supportKPIState.unshift(ck);
+          }
+        });
+      }
+
       renderBoard();
       updateStats();
+      renderKPI();
       if (badgeText) badgeText.textContent = "Cloud Sync (Live)";
       return true;
     }
@@ -99,7 +114,7 @@ async function fetchTasksFromCloud() {
   return false;
 }
 
-// Save tasks to Cloud Database & LocalStorage
+// Save tasks & KPIs to Cloud Database & LocalStorage
 async function saveTasksState() {
   lastCloudSaveTime = Date.now();
   saveTasksToLocalStorage();
@@ -107,14 +122,17 @@ async function saveTasksState() {
   if (badgeText) badgeText.textContent = "Saving...";
 
   try {
-    const payload = tasksState.length > 0 ? tasksState : { tasks: [] };
+    const payload = {
+      tasks: tasksState,
+      kpis: supportKPIState.slice(0, 700)
+    };
     const res = await fetch(JSONBIN_URL, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
     if (res.ok) {
-      console.log("Tasks saved successfully to Cloud Database!");
+      console.log("Tasks & KPIs saved successfully to Cloud Database!");
       if (badgeText) badgeText.textContent = "Cloud Sync (Live)";
     } else {
       if (badgeText) badgeText.textContent = "Cloud Sync (Live)";
@@ -873,11 +891,12 @@ function initKPIModal() {
 
     supportKPIState.unshift(newEntry);
     
-    // Save custom entries locally
+    // Save custom entries locally & sync to Cloud Database
     const customEntries = JSON.parse(localStorage.getItem("lhp_custom_kpis") || "[]");
     customEntries.unshift(newEntry);
     localStorage.setItem("lhp_custom_kpis", JSON.stringify(customEntries));
 
+    saveTasksState();
     renderKPI();
     closeModal();
   });
