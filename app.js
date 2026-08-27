@@ -994,34 +994,36 @@ function initKPIModal() {
 
 // KPI Sub-Tab Navigation & Module Handler
 function initKPISubnav() {
-  const subnavItems = document.querySelectorAll(".kpi-subnav-item");
-  const subpanels = document.querySelectorAll(".kpi-subpanel");
+  document.addEventListener("click", (e) => {
+    const item = e.target.closest(".kpi-subnav-item");
+    if (!item) return;
 
-  subnavItems.forEach(item => {
-    item.addEventListener("click", () => {
-      const targetSubtab = item.dataset.subtab;
+    const targetSubtab = item.getAttribute("data-subtab") || item.dataset.subtab;
+    if (!targetSubtab) return;
 
-      subnavItems.forEach(i => i.classList.remove("active"));
-      item.classList.add("active");
+    const subnavItems = document.querySelectorAll(".kpi-subnav-item");
+    const subpanels = document.querySelectorAll(".kpi-subpanel");
 
-      subpanels.forEach(panel => {
-        if (panel.id === targetSubtab) {
-          panel.classList.add("active");
-        } else {
-          panel.classList.remove("active");
-        }
-      });
+    subnavItems.forEach(i => i.classList.remove("active"));
+    item.classList.add("active");
 
-      // Render tab specific visuals
-      if (targetSubtab === "kpi-subtab-daily") renderDailyKPIReport();
-      if (targetSubtab === "kpi-subtab-team-info") renderKPITeamInfo();
-      if (targetSubtab === "kpi-subtab-weekly") renderWeeklyKPISummary();
-      if (targetSubtab === "kpi-subtab-trends") renderKPITrends();
-      if (targetSubtab === "kpi-subtab-performance") renderKPIPerformance();
-      if (targetSubtab === "kpi-subtab-grade") renderKPIGrade();
-      if (targetSubtab === "kpi-subtab-numbers") renderKPINumbers();
-      if (targetSubtab === "kpi-subtab-manage") renderKPIDbManager();
+    subpanels.forEach(panel => {
+      if (panel.id === targetSubtab) {
+        panel.classList.add("active");
+      } else {
+        panel.classList.remove("active");
+      }
     });
+
+    // Render tab specific visuals
+    if (targetSubtab === "kpi-subtab-daily") renderDailyKPIReport();
+    if (targetSubtab === "kpi-subtab-team-info") renderKPITeamInfo();
+    if (targetSubtab === "kpi-subtab-weekly") renderWeeklyKPISummary();
+    if (targetSubtab === "kpi-subtab-trends") renderKPITrends();
+    if (targetSubtab === "kpi-subtab-performance") renderKPIPerformance();
+    if (targetSubtab === "kpi-subtab-grade") renderKPIGrade();
+    if (targetSubtab === "kpi-subtab-numbers") renderKPINumbers();
+    if (targetSubtab === "kpi-subtab-manage") renderKPIDbManager();
   });
 
   // Init date pickers
