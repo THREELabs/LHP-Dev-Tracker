@@ -502,6 +502,7 @@ function createTaskCardElement(task) {
       </div>
       <div class="header-right-tags">
         <span class="priority-pill priority-${task.priority.toLowerCase()}">${task.priority}</span>
+        <button class="btn-edit-card" title="Edit task"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
         <button class="btn-delete-card" title="Delete task"><i class="fa-solid fa-trash-can"></i> Delete</button>
       </div>
     </div>
@@ -526,6 +527,15 @@ function createTaskCardElement(task) {
       saveTasksState();
       filterAndRender();
       updateStats();
+    });
+  }
+
+  // Edit event listener
+  const btnEdit = card.querySelector(".btn-edit-card");
+  if (btnEdit) {
+    btnEdit.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openEditTaskModal(task);
     });
   }
 
@@ -1773,57 +1783,119 @@ function renderKPIDbManager() {
   });
 }
 
-// Task Modal Functionality
-function initModal() {
+// Open Edit Task Modal
+function openEditTaskModal(task) {
+  const modal = document.getElementById("task-modal");
+  const modalTitle = document.getElementById("modal-title");
+  const btnSubmit = document.getElementById("btn-submit-task");
+  const editIdInput = document.getElementById("edit-task-id");
+
+  if (!modal || !task) return;
+
+  if (editIdInput) editIdInput.value = task.id;
+  if (modalTitle) modalTitle.textContent = `✏️ Edit Escalation Task (${task.id})`;
+  if (btnSubmit) btnSubmit.textContent = "Save Changes";
+
+  document.getElementById("task-title").value = task.title || "";
+  document.getElementById("task-submitter").value = task.submitter || "Adriana";
+  document.getElementById("task-jira-url").value = task.jiraUrl || task.jiraId || "";
+  document.getElementById("task-category").value = task.category || "SmartApp1003";
+  document.getElementById("task-priority").value = task.priority || "High";
+  if (document.getElementById("task-status")) document.getElementById("task-status").value = task.status || "backlog";
+  document.getElementById("task-desc").value = task.desc || "";
+
+  modal.classList.add("active");
+}
+
+// Task Modal Functionality (Create & Edit)
+function initTaskModal() {
   const modal = document.getElementById("task-modal");
   const btnCreate = document.getElementById("btn-create-task");
   const btnClose = document.getElementById("btn-close-modal");
   const btnCancel = document.getElementById("btn-cancel-modal");
   const form = document.getElementById("task-form");
+  const modalTitle = document.getElementById("modal-title");
+  const btnSubmit = document.getElementById("btn-submit-task");
+  const editIdInput = document.getElementById("edit-task-id");
 
   if (!modal || !form) return;
 
-  const openModal = () => modal.classList.add("active");
+  const openCreateModal = () => {
+    if (editIdInput) editIdInput.value = "";
+    if (modalTitle) modalTitle.textContent = "Create New Developer Task";
+    if (btnSubmit) btnSubmit.textContent = "Save Task";
+    form.reset();
+    modal.classList.add("active");
+  };
+
   const closeModal = () => {
     modal.classList.remove("active");
+    if (editIdInput) editIdInput.value = "";
+    if (modalTitle) modalTitle.textContent = "Create New Developer Task";
+    if (btnSubmit) btnSubmit.textContent = "Save Task";
     form.reset();
   };
 
-  btnCreate.addEventListener("click", openModal);
-  btnClose.addEventListener("click", closeModal);
-  btnCancel.addEventListener("click", closeModal);
+  if (btnCreate) btnCreate.addEventListener("click", openCreateModal);
+  if (btnClose) btnClose.addEventListener("click", closeModal);
+  if (btnCancel) btnCancel.addEventListener("click", closeModal);
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
+    const editTaskId = editIdInput ? editIdInput.value.trim() : "";
     const jiraUrlInput = document.getElementById("task-jira-url").value.trim();
     const extractedJiraId = extractJiraTicketId(jiraUrlInput);
-    const generatedId = extractedJiraId || `DEV-${2160 + tasksState.length}`;
-
-    // Construct Jira URL if only ticket ID was entered (e.g. DEV-2152)
+    
     let fullJiraUrl = jiraUrlInput;
     if (jiraUrlInput && !jiraUrlInput.startsWith("http")) {
       fullJiraUrl = `https://lhpcorp.atlassian.net/browse/${extractedJiraId || jiraUrlInput}`;
     }
 
-    const newTask = {
-      id: generatedId,
-      jiraId: extractedJiraId || generatedId,
-      jiraUrl: fullJiraUrl || `https://lhpcorp.atlassian.net/browse/${generatedId}`,
-      title: document.getElementById("task-title").value,
-      submitter: document.getElementById("task-submitter").value,
-      category: document.getElementById("task-category").value,
-      priority: document.getElementById("task-priority").value,
-      desc: document.getElementById("task-desc").value || "No description provided.",
-      status: "backlog",
-      isStarred: false
-    };
+    const titleVal = document.getElementById("task-title").value.trim();
+    const submitterVal = document.getElementById("task-submitter").value;
+    const categoryVal = document.getElementById("task-category").value;
+    const priorityVal = document.getElementById("task-priority").value;
+    const statusVal = document.getElementById("task-status") ? document.getElementById("task-status").value : "backlog";
+    const descVal = document.getElementById("task-desc").value.trim() || "No description provided.";
 
-    tasksState.unshift(newTask);
+    if (editTaskId) {
+      // Editing existing task
+      const targetTask = tasksState.find(t => t.id === editTaskId);
+      if (targetTask) {
+        targetTask.title = titleVal;
+        targetTask.submitter = submitterVal;
+        targetTask.category = categoryVal;
+        targetTask.priority = priorityVal;
+        targetTask.status = statusVal;
+        targetTask.desc = descVal;
+        if (jiraUrlInput) {
+          targetTask.jiraId = extractedJiraId || jiraUrlInput;
+          targetTask.jiraUrl = fullJiraUrl;
+        }
+      }
+    } else {
+      // Creating new task
+      const generatedId = extractedJiraId || `DEV-${2160 + tasksState.length}`;
+      const newTask = {
+        id: generatedId,
+        jiraId: extractedJiraId || generatedId,
+        jiraUrl: fullJiraUrl || `https://lhpcorp.atlassian.net/browse/${generatedId}`,
+        title: titleVal,
+        submitter: submitterVal,
+        category: categoryVal,
+        priority: priorityVal,
+        desc: descVal,
+        status: statusVal,
+        isStarred: false
+      };
+      tasksState.unshift(newTask);
+    }
+
     lastCloudSaveTime = Date.now();
     saveTasksState();
 
-    // Reset search & filters so newly created task is never hidden by active filters
+    // Reset search & filters so updated task displays cleanly
     const searchInput = document.getElementById("task-search");
     if (searchInput) searchInput.value = "";
     const filterSubmitter = document.getElementById("filter-submitter");

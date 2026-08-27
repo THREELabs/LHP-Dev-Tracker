@@ -828,7 +828,28 @@ body {
   color: #dc2626;
 }
 
-/* Delete Button on Task Cards (Only visible when delete mode active) */
+/* Edit & Delete Buttons on Task Cards */
+.btn-edit-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #f1f5f9;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 3px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 1px 6px;
+  transition: var(--transition-fast);
+}
+
+.btn-edit-card:hover {
+  background: #eff6ff;
+  color: var(--lhp-blue);
+  border-color: var(--lhp-blue);
+}
+
 .btn-delete-card {
   display: none;
   background: #fee2e2;
