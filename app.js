@@ -1028,50 +1028,112 @@ function renderKPIGrade() {
 
   if (!outputEl) return;
 
-  const total = supportKPIState.slice(0, 700).reduce((a, b) => a + Number(b.value), 0);
-  const closed = supportKPIState.filter(k => k.metric === "Closed").slice(0, 700).reduce((a, b) => a + Number(b.value), 0);
-  const bottleneck = supportKPIState.filter(k => ["Waiting on Us", "Dev Review", "In Jira"].includes(k.metric)).slice(0, 700).reduce((a, b) => a + Number(b.value), 0);
-  const migrations = supportKPIState.filter(k => k.metric === "LHP Migrations").slice(0, 700).reduce((a, b) => a + Number(b.value), 0);
+  const dateInput = document.getElementById("grade-date-input");
+  const endStr = dateInput?.value || new Date().toISOString().split("T")[0];
+  const endDate = new Date(endStr);
 
-  const resPct = total > 0 ? (closed / total) : 0;
-  const botPct = total > 0 ? (bottleneck / total) : 0;
+  // Current Week (Mon-Fri)
+  const dayOfWeek = endDate.getDay();
+  const diffToMon = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+  const currMon = new Date(endDate);
+  currMon.setDate(endDate.getDate() + diffToMon);
+  const currFri = new Date(currMon);
+  currFri.setDate(currMon.getDate() + 4);
 
-  const resScore = Math.min(50.0, (resPct / 0.65) * 50.0);
-  const botScore = botPct <= 0.05 ? 50.0 : (botPct >= 0.15 ? 0.0 : ((0.15 - botPct) / 0.10) * 50.0);
-  const bonus = migrations * 0.2;
+  // Previous Week (Mon-Fri)
+  const prevMon = new Date(currMon);
+  prevMon.setDate(currMon.getDate() - 7);
+  const prevFri = new Date(prevMon);
+  prevFri.setDate(prevMon.getDate() + 4);
 
-  const finalScore = Math.min(100.0, resScore + botScore + bonus);
-  let letterGrade = "F";
-  if (finalScore >= 90) letterGrade = "A";
-  else if (finalScore >= 80) letterGrade = "B";
-  else if (finalScore >= 70) letterGrade = "C";
-  else if (finalScore >= 60) letterGrade = "D";
+  const cMonStr = currMon.toISOString().split("T")[0];
+  const cFriStr = currFri.toISOString().split("T")[0];
+  const pMonStr = prevMon.toISOString().split("T")[0];
+  const pFriStr = prevFri.toISOString().split("T")[0];
+
+  const calcGradeForRange = (mStr, fStr) => {
+    const recs = supportKPIState.filter(k => k.date >= mStr && k.date <= fStr);
+    const total = recs.reduce((a, b) => a + Number(b.value), 0);
+    const closed = recs.filter(k => k.metric === "Closed").reduce((a, b) => a + Number(b.value), 0);
+    const bottleneck = recs.filter(k => ["Waiting on Us", "Dev Review", "In Jira"].includes(k.metric)).reduce((a, b) => a + Number(b.value), 0);
+    const migrations = recs.filter(k => k.metric === "LHP Migrations").reduce((a, b) => a + Number(b.value), 0);
+
+    const resPct = total > 0 ? (closed / total) : 0;
+    const botPct = total > 0 ? (bottleneck / total) : 0;
+    const resScore = Math.min(50.0, (resPct / 0.65) * 50.0);
+    const botScore = botPct <= 0.05 ? 50.0 : (botPct >= 0.15 ? 0.0 : ((0.15 - botPct) / 0.10) * 50.0);
+    const bonus = migrations * 0.2;
+    const score = Math.min(100.0, resScore + botScore + bonus);
+
+    let letter = "F";
+    if (score >= 90) letter = "A";
+    else if (score >= 80) letter = "B";
+    else if (score >= 70) letter = "C";
+    else if (score >= 60) letter = "D";
+
+    return { total, closed, bottleneck, migrations, resPct, botPct, resScore, botScore, bonus, score, letter };
+  };
+
+  const curr = calcGradeForRange(cMonStr, cFriStr);
+  const prev = calcGradeForRange(pMonStr, pFriStr);
+  const diff = (curr.score - prev.score).toFixed(1);
+  const diffStr = diff >= 0 ? `+${diff}` : `${diff}`;
+
+  // Member Individual Grades for Current Week
+  const members = ["Christie", "Kevin", "Nishant"];
+  let memberBreakdownText = `👥 MEMBER INDIVIDUAL GRADES:\n`;
+
+  members.forEach(m => {
+    const mRecs = supportKPIState.filter(k => k.member === m && k.date >= cMonStr && k.date <= cFriStr);
+    const mTot = mRecs.reduce((a, b) => a + Number(b.value), 0);
+    const mClo = mRecs.filter(k => k.metric === "Closed").reduce((a, b) => a + Number(b.value), 0);
+    const mBot = mRecs.filter(k => ["Waiting on Us", "Dev Review", "In Jira"].includes(k.metric)).reduce((a, b) => a + Number(b.value), 0);
+    const mMig = mRecs.filter(k => k.metric === "LHP Migrations").reduce((a, b) => a + Number(b.value), 0);
+
+    const mResPct = mTot > 0 ? (mClo / mTot) : 0;
+    const mBotPct = mTot > 0 ? (mBot / mTot) : 0;
+    const mResScore = Math.min(50.0, (mResPct / 0.65) * 50.0);
+    const mBotScore = mBotPct <= 0.05 ? 50.0 : (mBotPct >= 0.15 ? 0.0 : ((0.15 - mBotPct) / 0.10) * 50.0);
+    const mBonus = mMig * 0.2;
+    const mScore = Math.min(100.0, mResScore + mBotScore + mBonus);
+
+    let mGrade = "F";
+    if (mScore >= 90) mGrade = "A";
+    else if (mScore >= 80) mGrade = "B";
+    else if (mScore >= 70) mGrade = "C";
+    else if (mScore >= 60) mGrade = "D";
+
+    memberBreakdownText += `  • ${m.padEnd(9)} : Grade [ ${mGrade} ] (${mScore.toFixed(1)} pts) | Closed: ${mClo}, Bottleneck: ${mBot}\n`;
+  });
 
   outputEl.textContent = `
 ========================================
        WEEKLY TEAM GRADING REPORT
 ========================================
+Target Week: ${cMonStr} to ${cFriStr} (Mon-Fri)
 
-📊 BENCHMARK METRICS:
-  • Total Touched Volume: ${total.toLocaleString()}
-  • Tickets Closed: ${closed.toLocaleString()} (${(resPct * 100).toFixed(1)}%)
-  • Bottleneck Tickets: ${bottleneck.toLocaleString()} (${(botPct * 100).toFixed(1)}%)
-  • LHP Migrations: ${migrations}
+🏆 CURRENT WEEK GRADE  : [ ${curr.letter} ] (${curr.score.toFixed(1)} / 100)
+🕒 PREVIOUS WEEK GRADE : [ ${prev.letter} ] (${prev.score.toFixed(1)} / 100)
+📈 WEEK-OVER-WEEK DELTA: ${diffStr} points
+
+📊 TEAM BENCHMARK METRICS:
+  • Total Touched Volume: ${curr.total.toLocaleString()}
+  • Tickets Closed     : ${curr.closed.toLocaleString()} (${(curr.resPct * 100).toFixed(1)}%)
+  • Bottleneck Tickets : ${curr.bottleneck.toLocaleString()} (${(curr.botPct * 100).toFixed(1)}%)
+  • LHP Migrations     : ${curr.migrations}
 
 💯 SCORE BREAKDOWN:
-  • Resolution Score (Max 50): ${resScore.toFixed(1)} / 50.0
-  • Bottleneck Score (Max 50): ${botScore.toFixed(1)} / 50.0
-  • Extra Credit Bonus (+0.2/migration): +${bonus.toFixed(1)} pts
+  • Resolution Score (Max 50): ${curr.resScore.toFixed(1)} / 50.0
+  • Bottleneck Score (Max 50): ${curr.botScore.toFixed(1)} / 50.0
+  • Extra Credit Bonus       : +${curr.bonus.toFixed(1)} pts
 
-🏆 FINAL OVERALL SCORE: ${finalScore.toFixed(1)} / 100.0
-GRADE: [ ${letterGrade} ]
-`;
+${memberBreakdownText}`;
 
   if (asciiEl) {
     asciiEl.textContent = `
-  /\\_/\\   FINAL SCORE: ${finalScore.toFixed(1)} / 100.0
- ( o.o )  GRADE: [ ${letterGrade} ]
-  > ^ <   STATUS: ${letterGrade === 'A' ? 'VICTORY! ALL SLAS MET!' : 'SOLID PERFORMANCE! KEEP CLOSING!'}
+  /\\_/\\   FINAL TEAM GRADE: [ ${curr.letter} ] (${curr.score.toFixed(1)}/100)
+ ( o.o )  WEEK DELTA      : ${diffStr} pts
+  > ^ <   BATTLE STATUS   : ${curr.letter === 'A' ? '⚔️ VICTORY! ZERO SLA BREACHES!' : '⚔️ ONSLAUGHT CONTINUES!'}
 `;
   }
 }
