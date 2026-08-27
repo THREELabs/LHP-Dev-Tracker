@@ -328,6 +328,45 @@
               <h3>Submitter SLA Compliance & Resolution Scorecard</h3>
               <div id="kpi-submitter-container"></div>
             </div>
+
+            <!-- Support KPI Database (support_kpis.db Integration) -->
+            <div class="analytics-card" style="grid-column: 1 / -1; margin-top: 10px;">
+              <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                  <h3 style="margin-bottom: 4px;"><i class="fa-solid fa-database" style="color: var(--lhp-blue); margin-right: 6px;"></i>Support KPIs Database (support_kpis.db)</h3>
+                  <p style="font-size: 0.78rem; color: var(--text-muted);">Loaded <strong id="kpi-total-db-count">2,608</strong> support KPI entries from historical database.</p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn btn-secondary" id="btn-export-kpis" title="Export KPI records to JSON">
+                    <i class="fa-solid fa-download"></i> Export JSON
+                  </button>
+                  <button class="btn btn-primary" id="btn-log-kpi">
+                    <i class="fa-solid fa-plus"></i> + Log Support KPI
+                  </button>
+                </div>
+              </div>
+
+              <!-- Support KPI Metrics Cards -->
+              <div id="kpi-support-metrics-grid" class="kpi-summary-grid" style="grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;"></div>
+
+              <!-- Recent KPI Entries Table -->
+              <h4 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 10px; color: var(--text-main);">Recent Support KPI Log Entries</h4>
+              <div class="kpi-table-wrapper" style="overflow-x: auto;">
+                <table class="kpi-table" style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
+                  <thead>
+                    <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color); text-align: left;">
+                      <th style="padding: 8px 12px;">ID</th>
+                      <th style="padding: 8px 12px;">Date</th>
+                      <th style="padding: 8px 12px;">Member</th>
+                      <th style="padding: 8px 12px;">Metric</th>
+                      <th style="padding: 8px 12px;">Value</th>
+                      <th style="padding: 8px 12px;">Entry Type</th>
+                    </tr>
+                  </thead>
+                  <tbody id="kpi-db-recent-body"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -401,6 +440,71 @@
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" id="btn-cancel-modal">Cancel</button>
           <button type="submit" class="btn btn-primary">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Log Support KPI Modal -->
+  <div class="modal-overlay" id="kpi-entry-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Log Support KPI Entry</h3>
+        <button class="btn-close" id="btn-close-kpi-modal">&times;</button>
+      </div>
+      <form id="kpi-entry-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="kpi-entry-member">Team Member *</label>
+            <select id="kpi-entry-member" required>
+              <option value="Christie">Christie</option>
+              <option value="Kevin">Kevin</option>
+              <option value="Nishant">Nishant</option>
+              <option value="Adriana">Adriana</option>
+              <option value="Mark">Mark</option>
+              <option value="Rocky">Rocky</option>
+              <option value="Amy">Amy</option>
+              <option value="Lisa">Lisa</option>
+              <option value="Warren">Warren</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="kpi-entry-date">Date *</label>
+            <input type="date" id="kpi-entry-date" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="kpi-entry-type">Entry Type</label>
+            <select id="kpi-entry-type">
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="kpi-entry-metric">Metric *</label>
+            <select id="kpi-entry-metric" required>
+              <option value="Waiting on Contact">Waiting on Contact</option>
+              <option value="Waiting on Us">Waiting on Us</option>
+              <option value="Dev Review">Dev Review</option>
+              <option value="In Jira">In Jira</option>
+              <option value="Closed">Closed</option>
+              <option value="Backlog Health/Activation">Backlog Health/Activation</option>
+              <option value="Customer Response">Customer Response</option>
+              <option value="LHP Migrations">LHP Migrations</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="kpi-entry-value">Metric Value *</label>
+          <input type="number" id="kpi-entry-value" required min="0" value="0">
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-kpi-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save KPI Entry</button>
         </div>
       </form>
     </div>

@@ -151,6 +151,24 @@ function loadTasksState() {
 
 // App State
 let tasksState = loadTasksState();
+let supportKPIState = [];
+
+async function loadSupportKPIData() {
+  try {
+    const res = await fetch("kpi_data.json");
+    if (res.ok) {
+      const data = await res.json();
+      const customEntries = JSON.parse(localStorage.getItem("lhp_custom_kpis") || "[]");
+      supportKPIState = [...customEntries, ...data];
+    } else {
+      supportKPIState = JSON.parse(localStorage.getItem("lhp_custom_kpis") || "[]");
+    }
+  } catch (err) {
+    console.warn("Could not load kpi_data.json, loading local custom entries", err);
+    supportKPIState = JSON.parse(localStorage.getItem("lhp_custom_kpis") || "[]");
+  }
+  renderKPI();
+}
 
 // DOM Initialization
 document.addEventListener("DOMContentLoaded", () => {
@@ -158,7 +176,9 @@ document.addEventListener("DOMContentLoaded", () => {
   initNavigation();
   initSearchAndFilters();
   initModal();
+  initKPIModal();
   initDeleteToggle();
+  loadSupportKPIData();
 
   if (checkAuth()) {
     renderBoard();
@@ -750,6 +770,117 @@ function renderKPI() {
   }).join("");
 
   submitterContainer.innerHTML = `<div class="kpi-scorecard-list">${scorecardHtml}</div>`;
+
+  // 4. Support KPIs Database (support_kpis.db) Metrics & Table
+  const totalDbCountEl = document.getElementById("kpi-total-db-count");
+  const metricsGrid = document.getElementById("kpi-support-metrics-grid");
+  const recentBody = document.getElementById("kpi-db-recent-body");
+
+  if (totalDbCountEl) totalDbCountEl.textContent = supportKPIState.length.toLocaleString();
+
+  if (metricsGrid) {
+    const kpiMetricTypes = [
+      { name: "Waiting on Contact", icon: "fa-comments", color: "#2563eb" },
+      { name: "Waiting on Us", icon: "fa-clock-rotate-left", color: "#eab308" },
+      { name: "Dev Review", icon: "fa-code-pull-request", color: "#a855f7" },
+      { name: "In Jira", icon: "fa-square-check", color: "#06b6d4" },
+      { name: "Closed", icon: "fa-circle-check", color: "#10b981" },
+      { name: "Backlog Health/Activation", icon: "fa-heart-pulse", color: "#ec4899" },
+      { name: "Customer Response", icon: "fa-reply-all", color: "#f97316" },
+      { name: "LHP Migrations", icon: "fa-boxes-packing", color: "#6366f1" }
+    ];
+
+    metricsGrid.innerHTML = kpiMetricTypes.map(m => {
+      const filtered = supportKPIState.filter(k => k.metric === m.name);
+      const totalVal = filtered.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
+      return `
+        <div class="kpi-scorecard" style="padding: 12px 14px;">
+          <div class="kpi-scorecard-header">
+            <span class="kpi-label" style="font-size: 0.68rem;">${m.name}</span>
+            <i class="fa-solid ${m.icon} kpi-icon" style="color: ${m.color}; font-size: 0.95rem;"></i>
+          </div>
+          <div class="kpi-val" style="font-size: 1.3rem; margin-bottom: 2px;">${totalVal.toLocaleString()}</div>
+          <div style="font-size: 0.68rem; color: var(--text-muted);">${filtered.length} log entries</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  if (recentBody) {
+    const recentRows = supportKPIState.slice(0, 10);
+    recentBody.innerHTML = recentRows.map(r => `
+      <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 8px 12px; font-weight: 700; color: var(--text-dim);">#${r.id || '-'}</td>
+        <td style="padding: 8px 12px;">${r.date || '-'}</td>
+        <td style="padding: 8px 12px; font-weight: 600; color: var(--lhp-blue);">${r.member || '-'}</td>
+        <td style="padding: 8px 12px;"><span class="category-tag smartapp1003" style="font-size: 0.65rem;">${r.metric || '-'}</span></td>
+        <td style="padding: 8px 12px; font-weight: 700; color: var(--text-main);">${r.value}</td>
+        <td style="padding: 8px 12px;"><span class="priority-pill priority-medium">${r.entry_type || 'Daily'}</span></td>
+      </tr>
+    `).join("");
+  }
+}
+
+// Support KPI Entry Modal Functionality
+function initKPIModal() {
+  const modal = document.getElementById("kpi-entry-modal");
+  const btnLog = document.getElementById("btn-log-kpi");
+  const btnClose = document.getElementById("btn-close-kpi-modal");
+  const btnCancel = document.getElementById("btn-cancel-kpi-modal");
+  const form = document.getElementById("kpi-entry-form");
+  const btnExport = document.getElementById("btn-export-kpis");
+
+  if (!modal || !form) return;
+
+  // Default date picker to today
+  const dateInput = document.getElementById("kpi-entry-date");
+  if (dateInput) dateInput.value = new Date().toISOString().split("T")[0];
+
+  const openModal = () => modal.classList.add("active");
+  const closeModal = () => {
+    modal.classList.remove("active");
+    form.reset();
+    if (dateInput) dateInput.value = new Date().toISOString().split("T")[0];
+  };
+
+  if (btnLog) btnLog.addEventListener("click", openModal);
+  if (btnClose) btnClose.addEventListener("click", closeModal);
+  if (btnCancel) btnCancel.addEventListener("click", closeModal);
+
+  if (btnExport) {
+    btnExport.addEventListener("click", () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(supportKPIState, null, 2));
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `support_kpis_export_${new Date().toISOString().split("T")[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    });
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const newEntry = {
+      id: supportKPIState.length + 1,
+      date: document.getElementById("kpi-entry-date").value,
+      member: document.getElementById("kpi-entry-member").value,
+      entry_type: document.getElementById("kpi-entry-type").value,
+      metric: document.getElementById("kpi-entry-metric").value,
+      value: Number(document.getElementById("kpi-entry-value").value) || 0
+    };
+
+    supportKPIState.unshift(newEntry);
+    
+    // Save custom entries locally
+    const customEntries = JSON.parse(localStorage.getItem("lhp_custom_kpis") || "[]");
+    customEntries.unshift(newEntry);
+    localStorage.setItem("lhp_custom_kpis", JSON.stringify(customEntries));
+
+    renderKPI();
+    closeModal();
+  });
 }
 
 // Task Modal Functionality
