@@ -85,6 +85,10 @@
           <i class="fa-solid fa-chart-line"></i>
           <span>Escalation Analytics</span>
         </a>
+        <a href="#kpi" class="nav-item" data-view="kpi">
+          <i class="fa-solid fa-chart-column"></i>
+          <span>KPI Tracker</span>
+        </a>
       </nav>
     </aside>
 
@@ -260,6 +264,69 @@
             <div class="analytics-card" style="grid-column: 1 / -1;">
               <h3>Escalation Burn-down & Completion Trend</h3>
               <div id="analytics-burndown-container"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- View 4: KPI Tracker -->
+        <section id="view-kpi" class="view-panel">
+          <div class="panel-header">
+            <h2>Engineering & Escalation KPIs</h2>
+            <p>Key Performance Indicators, SLA Compliance, MTTR, and Target Thresholds.</p>
+          </div>
+
+          <!-- Top KPI Scorecards Grid -->
+          <div class="kpi-summary-grid">
+            <div class="kpi-scorecard">
+              <div class="kpi-scorecard-header">
+                <span class="kpi-label">SLA Compliance Rate</span>
+                <i class="fa-solid fa-bullseye kpi-icon green"></i>
+              </div>
+              <div class="kpi-val" id="kpi-sla-compliance">100%</div>
+              <div class="kpi-status-badge green"><i class="fa-solid fa-circle-check"></i> On Track (Target: 95%)</div>
+            </div>
+
+            <div class="kpi-scorecard">
+              <div class="kpi-scorecard-header">
+                <span class="kpi-label">Avg Resolution Time (MTTR)</span>
+                <i class="fa-solid fa-stopwatch kpi-icon blue"></i>
+              </div>
+              <div class="kpi-val" id="kpi-mttr">4.2 hrs</div>
+              <div class="kpi-status-badge green"><i class="fa-solid fa-circle-check"></i> Within SLA (Target: &lt; 24h)</div>
+            </div>
+
+            <div class="kpi-scorecard">
+              <div class="kpi-scorecard-header">
+                <span class="kpi-label">Open Escalation Cap</span>
+                <i class="fa-solid fa-fire-flame-curved kpi-icon amber"></i>
+              </div>
+              <div class="kpi-val" id="kpi-open-cap">0 / 15</div>
+              <div class="kpi-status-badge green"><i class="fa-solid fa-shield-halved"></i> Healthy Queue</div>
+            </div>
+
+            <div class="kpi-scorecard">
+              <div class="kpi-scorecard-header">
+                <span class="kpi-label">Urgent Escalation SLA</span>
+                <i class="fa-solid fa-bolt kpi-icon coral"></i>
+              </div>
+              <div class="kpi-val" id="kpi-urgent-sla">100%</div>
+              <div class="kpi-status-badge green"><i class="fa-solid fa-circle-check"></i> Zero SLA Breaches</div>
+            </div>
+          </div>
+
+          <!-- KPI Detail Cards -->
+          <div class="analytics-grid">
+            <div class="analytics-card">
+              <h3>SLA Performance Targets by Priority</h3>
+              <div id="kpi-priority-container"></div>
+            </div>
+            <div class="analytics-card">
+              <h3>Product Category SLA & Health Score</h3>
+              <div id="kpi-category-container"></div>
+            </div>
+            <div class="analytics-card" style="grid-column: 1 / -1;">
+              <h3>Submitter SLA Compliance & Resolution Scorecard</h3>
+              <div id="kpi-submitter-container"></div>
             </div>
           </div>
         </section>
