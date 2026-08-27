@@ -1013,6 +1013,26 @@ function renderKPITeamInfo() {
   }).join("");
 }
 
+function parseLocalDate(dateStr) {
+  if (!dateStr) return new Date();
+  if (typeof dateStr !== "string") return new Date(dateStr);
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    return new Date(y, m, d);
+  }
+  return new Date(dateStr);
+}
+
+function formatLocalIsoDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // Sub-Tab 8: 100-Point Team Grading & ASCII Battle Engine
 function initKPIGrade() {
   const btn = document.getElementById("btn-calculate-grade");
@@ -1029,8 +1049,8 @@ function renderKPIGrade() {
   if (!outputEl) return;
 
   const dateInput = document.getElementById("grade-date-input");
-  const endStr = dateInput?.value || new Date().toISOString().split("T")[0];
-  const endDate = new Date(endStr);
+  const endStr = dateInput?.value || formatLocalIsoDate(new Date());
+  const endDate = parseLocalDate(endStr);
 
   // Current Week (Mon-Fri)
   const dayOfWeek = endDate.getDay();
@@ -1046,10 +1066,10 @@ function renderKPIGrade() {
   const prevFri = new Date(prevMon);
   prevFri.setDate(prevMon.getDate() + 4);
 
-  const cMonStr = currMon.toISOString().split("T")[0];
-  const cFriStr = currFri.toISOString().split("T")[0];
-  const pMonStr = prevMon.toISOString().split("T")[0];
-  const pFriStr = prevFri.toISOString().split("T")[0];
+  const cMonStr = formatLocalIsoDate(currMon);
+  const cFriStr = formatLocalIsoDate(currFri);
+  const pMonStr = formatLocalIsoDate(prevMon);
+  const pFriStr = formatLocalIsoDate(prevFri);
 
   const calcGradeForRange = (mStr, fStr) => {
     const recs = supportKPIState.filter(k => k.date >= mStr && k.date <= fStr);
@@ -1147,9 +1167,9 @@ function initKPINumbers() {
   if (!dateInput) return;
 
   const shiftWeek = (days) => {
-    const curr = new Date(dateInput.value || new Date());
+    const curr = parseLocalDate(dateInput.value);
     curr.setDate(curr.getDate() + days);
-    dateInput.value = curr.toISOString().split("T")[0];
+    dateInput.value = formatLocalIsoDate(curr);
     renderKPINumbers();
   };
 
@@ -1165,8 +1185,8 @@ function renderKPINumbers() {
 
   if (!cardsEl || !tableEl || !dateInput) return;
 
-  // Calculate Monday and Friday of selected date's week
-  const selDate = new Date(dateInput.value || new Date());
+  // Calculate Monday and Friday of selected date's week using parseLocalDate to prevent UTC timezone offset shift
+  const selDate = parseLocalDate(dateInput.value);
   const dayOfWeek = selDate.getDay(); // 0 is Sun, 1 is Mon...
   const diffToMon = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
   
@@ -1175,8 +1195,8 @@ function renderKPINumbers() {
   const friday = new Date(monday);
   friday.setDate(monday.getDate() + 4);
 
-  const monStr = monday.toISOString().split("T")[0];
-  const friStr = friday.toISOString().split("T")[0];
+  const monStr = formatLocalIsoDate(monday);
+  const friStr = formatLocalIsoDate(friday);
 
   const members = ["Christie", "Kevin", "Nishant"];
   const target = 10;
