@@ -1462,3 +1462,49 @@ input:focus, select:focus, textarea:focus {
   font-weight: 800;
   color: var(--text-main);
 }
+
+/* KPI Sub-Tab Navigation Bar */
+.kpi-subnav-bar {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.kpi-subnav-item {
+  background: none;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.kpi-subnav-item:hover {
+  background: #f1f5f9;
+  color: var(--text-main);
+}
+
+.kpi-subnav-item.active {
+  background: #eff6ff;
+  color: var(--lhp-blue);
+  font-weight: 700;
+  border-bottom: 2px solid var(--lhp-blue);
+}
+
+.kpi-subpanel {
+  display: none;
+}
+
+.kpi-subpanel.active {
+  display: block;
+}

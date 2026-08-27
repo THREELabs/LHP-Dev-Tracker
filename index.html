@@ -271,11 +271,23 @@
         <!-- View 4: KPI Tracker -->
         <section id="view-kpi" class="view-panel">
           <div class="panel-header">
-            <h2>Engineering & Escalation KPIs</h2>
-            <p>Key Performance Indicators, SLA Compliance, MTTR, and Target Thresholds.</p>
+            <h2>Support & Engineering KPI Tracker</h2>
+            <p>Comprehensive Support Ticket KPIs, SLA Compliance, Daily/Weekly Reports, Trend Analytics, & Auto-Parser.</p>
           </div>
 
-          <!-- Top KPI Scorecards Grid -->
+          <!-- KPI Sub-Tab Navigation Bar -->
+          <div class="kpi-subnav-bar">
+            <button class="kpi-subnav-item active" data-subtab="kpi-subtab-overview"><i class="fa-solid fa-gauge-high"></i> Overview</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-entry"><i class="fa-solid fa-pen-to-square"></i> Submit Daily KPIs</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-daily"><i class="fa-solid fa-calendar-day"></i> Daily Report</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-weekly"><i class="fa-solid fa-calendar-week"></i> Weekly Summary</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-trends"><i class="fa-solid fa-chart-line"></i> Trend Analytics</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-performance"><i class="fa-solid fa-robot"></i> AI Performance Insights</button>
+            <button class="kpi-subnav-item" data-subtab="kpi-subtab-manage"><i class="fa-solid fa-database"></i> Manage Database</button>
+          </div>
+
+          <!-- Sub-Tab 1: Overview -->
+          <div id="kpi-subtab-overview" class="kpi-subpanel active">
           <div class="kpi-summary-grid">
             <div class="kpi-scorecard">
               <div class="kpi-scorecard-header">
@@ -364,6 +376,193 @@
                     </tr>
                   </thead>
                   <tbody id="kpi-db-recent-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          </div><!-- End #kpi-subtab-overview -->
+
+          <!-- Sub-Tab 2: Submit Daily KPIs & Text Auto-Parser -->
+          <div id="kpi-subtab-entry" class="kpi-subpanel">
+            <div class="analytics-card">
+              <h3><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--lhp-blue); margin-right: 6px;"></i>Submit Daily KPIs & Text Auto-Parser</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Paste raw email or chat text below. The auto-parser will automatically extract metric numbers for your report!</p>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="parser-member">Team Member *</label>
+                  <select id="parser-member">
+                    <option value="Christie">Christie</option>
+                    <option value="Kevin">Kevin</option>
+                    <option value="Nishant">Nishant</option>
+                    <option value="Adriana">Adriana</option>
+                    <option value="Mark">Mark</option>
+                    <option value="Rocky">Rocky</option>
+                    <option value="Amy">Amy</option>
+                    <option value="Lisa">Lisa</option>
+                    <option value="Warren">Warren</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="parser-date">Report Date *</label>
+                  <input type="date" id="parser-date">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="parser-text">Paste Raw Text / Daily Update *</label>
+                <textarea id="parser-text" rows="6" placeholder="Paste email update... e.g.:&#10;Waiting on Contact: 5&#10;Waiting on Us: 2&#10;Dev Review: 1&#10;In Jira: 3&#10;Closed: 8"></textarea>
+              </div>
+
+              <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" id="btn-parse-save"><i class="fa-solid fa-robot"></i> Parse & Save KPI Data</button>
+                <button class="btn btn-secondary" id="btn-clear-parser">Clear Text</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 3: Daily Report -->
+          <div id="kpi-subtab-daily" class="kpi-subpanel">
+            <div class="analytics-card">
+              <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                  <h3><i class="fa-solid fa-calendar-day" style="color: var(--lhp-blue); margin-right: 6px;"></i>Daily KPI Summary & Visualizations</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Navigate by date to inspect daily team metric breakdowns.</p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button class="btn btn-secondary" id="btn-daily-prev"><i class="fa-solid fa-chevron-left"></i> Prev Day</button>
+                  <input type="date" id="daily-report-date" style="padding: 6px 10px;">
+                  <button class="btn btn-secondary" id="btn-daily-next">Next Day <i class="fa-solid fa-chevron-right"></i></button>
+                  <button class="btn btn-primary" id="btn-daily-today">Today</button>
+                </div>
+              </div>
+
+              <div id="daily-report-content-grid" class="analytics-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="analytics-card">
+                  <h4>Daily Metrics Summary</h4>
+                  <div id="daily-text-summary" style="font-family: monospace; font-size: 0.8rem; background: #f8fafc; padding: 12px; border-radius: 4px; border: 1px solid #e2e8f0; white-space: pre-wrap;"></div>
+                </div>
+                <div class="analytics-card">
+                  <h4>Daily Visualizations</h4>
+                  <div id="daily-visuals-container"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 4: Weekly Summary -->
+          <div id="kpi-subtab-weekly" class="kpi-subpanel">
+            <div class="analytics-card">
+              <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                  <h3><i class="fa-solid fa-calendar-week" style="color: var(--lhp-blue); margin-right: 6px;"></i>Weekly Individual & Team Summary</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Mon-Fri metric totals aggregated per team member.</p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button class="btn btn-secondary" id="btn-weekly-prev"><i class="fa-solid fa-chevron-left"></i> Prev Week</button>
+                  <input type="date" id="weekly-report-date" style="padding: 6px 10px;">
+                  <button class="btn btn-secondary" id="btn-weekly-next">Next Week <i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+              </div>
+
+              <div id="weekly-report-content-grid" class="analytics-grid">
+                <div class="analytics-card" style="grid-column: 1 / -1;">
+                  <h4>Totals by Member & Metric (Mon-Fri)</h4>
+                  <div id="weekly-totals-container"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 5: Trend Analytics -->
+          <div id="kpi-subtab-trends" class="kpi-subpanel">
+            <div class="analytics-card">
+              <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                  <h3><i class="fa-solid fa-chart-line" style="color: var(--lhp-blue); margin-right: 6px;"></i>Workload & Ticket Category Trends</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Historical multi-week workload trajectory and resolution velocity.</p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <label style="font-size: 0.78rem; font-weight: 600;">Time Window:</label>
+                  <select id="trend-window-select" style="padding: 6px 10px;">
+                    <option value="4">Last 4 Weeks</option>
+                    <option value="8" selected>Last 8 Weeks</option>
+                    <option value="12">Last 12 Weeks</option>
+                    <option value="24">Last 24 Weeks</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="trends-visual-container"></div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 6: AI Performance Insights -->
+          <div id="kpi-subtab-performance" class="kpi-subpanel">
+            <div class="analytics-card">
+              <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                  <h3><i class="fa-solid fa-robot" style="color: var(--lhp-blue); margin-right: 6px;"></i>AI Performance Insights & Member Health</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Automated throughput evaluation, grading metrics, and workload balance score.</p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <label style="font-size: 0.78rem; font-weight: 600;">Evaluate Member:</label>
+                  <select id="perf-member-select" style="padding: 6px 10px;">
+                    <option value="all">Entire Team</option>
+                    <option value="Christie">Christie</option>
+                    <option value="Kevin">Kevin</option>
+                    <option value="Nishant">Nishant</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="perf-insights-content-grid" class="analytics-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="analytics-card">
+                  <h4>AI Insights & Grading Report</h4>
+                  <div id="perf-report-card" style="font-size: 0.82rem; line-height: 1.5; color: var(--text-main);"></div>
+                </div>
+                <div class="analytics-card">
+                  <h4>Member Health Trendlines (Mon-Fri)</h4>
+                  <div id="perf-trendlines-container"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 7: Manage Database -->
+          <div id="kpi-subtab-manage" class="kpi-subpanel">
+            <div class="analytics-card">
+              <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                  <h3><i class="fa-solid fa-database" style="color: var(--lhp-blue); margin-right: 6px;"></i>Manage Database Entries</h3>
+                  <p style="font-size: 0.78rem; color: var(--text-muted);">Search, filter, edit, or delete individual log records from support_kpis.db.</p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" id="kpi-db-search" placeholder="Search by member or metric..." style="padding: 6px 12px; width: 220px;">
+                  <select id="kpi-db-filter-member" style="padding: 6px 10px;">
+                    <option value="all">All Members</option>
+                    <option value="Christie">Christie</option>
+                    <option value="Kevin">Kevin</option>
+                    <option value="Nishant">Nishant</option>
+                  </select>
+                  <button class="btn btn-secondary" id="btn-refresh-kpi-db"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                </div>
+              </div>
+
+              <div class="kpi-table-wrapper" style="overflow-x: auto; max-height: 500px;">
+                <table class="kpi-table" style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
+                  <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10;">
+                    <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                      <th style="padding: 8px 12px;">ID</th>
+                      <th style="padding: 8px 12px;">Date</th>
+                      <th style="padding: 8px 12px;">Member</th>
+                      <th style="padding: 8px 12px;">Metric</th>
+                      <th style="padding: 8px 12px;">Value</th>
+                      <th style="padding: 8px 12px;">Entry Type</th>
+                      <th style="padding: 8px 12px;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="kpi-db-full-body"></tbody>
                 </table>
               </div>
             </div>
