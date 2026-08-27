@@ -1508,3 +1508,189 @@ input:focus, select:focus, textarea:focus {
 .kpi-subpanel.active {
   display: block;
 }
+
+/* ==========================================================================
+   Main Dashboard Hub View Styling
+   ========================================================================== */
+.dashboard-hero-banner {
+  background: linear-gradient(135deg, #001b3a 0%, #0044b3 60%, #0066ff 100%);
+  border-radius: var(--radius-md);
+  padding: 26px 30px;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px rgba(0, 102, 255, 0.15);
+}
+
+.hero-text-content h1 {
+  font-family: var(--font-heading);
+  font-size: 1.55rem;
+  font-weight: 800;
+  margin: 6px 0;
+  letter-spacing: -0.02em;
+}
+
+.hero-text-content p {
+  font-size: 0.86rem;
+  opacity: 0.9;
+  max-width: 600px;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hero-actions-row {
+  display: flex;
+  gap: 12px;
+}
+
+.dashboard-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.hub-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  position: relative;
+  overflow: hidden;
+}
+
+.hub-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: transparent;
+  transition: background 0.25s ease;
+}
+
+.hub-card[data-launch="board"]::before { background: var(--lhp-blue); }
+.hub-card[data-launch="team"]::before { background: var(--accent-green); }
+.hub-card[data-launch="analytics"]::before { background: var(--accent-amber); }
+.hub-card[data-launch="kpi"]::before { background: var(--accent-purple); }
+
+.hub-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 102, 255, 0.12);
+  border-color: rgba(0, 102, 255, 0.3);
+}
+
+.hub-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.hub-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.hub-icon-box.purple { background: #f3e8ff; color: #7e22ce; }
+.hub-icon-box.green { background: #dcfce7; color: #15803d; }
+.hub-icon-box.amber { background: #fef3c7; color: #b45309; }
+.hub-icon-box.blue { background: #e0f2fe; color: #0369a1; }
+
+.hub-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.hub-card h3 {
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.hub-card p {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 16px;
+}
+
+.hub-card-stats {
+  display: flex;
+  gap: 16px;
+  background: #f8fafc;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 18px;
+}
+
+.hub-stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.hub-stat-val {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.hub-stat-lbl {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.btn-hub-launch {
+  background: #f1f5f9;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.hub-card:hover .btn-hub-launch {
+  background: var(--lhp-blue);
+  color: #ffffff;
+  border-color: var(--lhp-blue);
+}

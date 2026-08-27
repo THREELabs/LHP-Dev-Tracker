@@ -73,7 +73,11 @@
       </div>
 
       <nav class="nav-menu">
-        <a href="#board" class="nav-item active" data-view="board">
+        <a href="#dashboard" class="nav-item active" data-view="dashboard">
+          <i class="fa-solid fa-house"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#board" class="nav-item" data-view="board">
           <i class="fa-solid fa-square-kanban"></i>
           <span>Escalation Tracker</span>
         </a>
@@ -169,8 +173,117 @@
 
       <!-- Views Container -->
       <div class="view-content-wrapper">
+        <!-- View 0: Main Access Points Hub Dashboard -->
+        <section id="view-dashboard" class="view-panel active">
+          <div class="dashboard-hero-banner">
+            <div class="hero-text-content">
+              <div class="hero-badge"><i class="fa-solid fa-bolt"></i> LHP Dev & Operations Hub</div>
+              <h1>Welcome to LenderHomePage Command Center</h1>
+              <p>Select a portal below to manage live escalations, view team bandwidth, analyze SLA compliance, or track support KPIs.</p>
+            </div>
+            <div class="hero-actions-row">
+              <button class="btn btn-primary" id="dash-btn-new-task"><i class="fa-solid fa-plus"></i> New Escalation</button>
+              <button class="btn btn-secondary" id="dash-btn-kpi-entry" style="background: rgba(255,255,255,0.2); color: #fff; border-color: rgba(255,255,255,0.4);"><i class="fa-solid fa-pen-to-square"></i> Log KPI Metrics</button>
+            </div>
+          </div>
+
+          <div class="dashboard-hub-grid">
+            <!-- Access Point 1: Escalation Tracker -->
+            <div class="hub-card" data-launch="board">
+              <div class="hub-card-header">
+                <div class="hub-icon-box purple">
+                  <i class="fa-solid fa-square-kanban"></i>
+                </div>
+                <span class="hub-tag">Sprint Operations</span>
+              </div>
+              <h3>Escalation Tracker</h3>
+              <p>Real-time high-density Kanban board for live customer escalations, Jira DEV tickets, priority tagging, and starred tasks.</p>
+              <div class="hub-card-stats">
+                <div class="hub-stat-item">
+                  <span class="hub-stat-val" id="dash-open-tasks">0</span>
+                  <span class="hub-stat-lbl">Open Escalations</span>
+                </div>
+                <div class="hub-stat-item">
+                  <span class="hub-stat-val" id="dash-starred-tasks">0</span>
+                  <span class="hub-stat-lbl">Starred Tasks</span>
+                </div>
+              </div>
+              <button class="btn-hub-launch"><i class="fa-solid fa-arrow-right"></i> Launch Escalation Tracker</button>
+            </div>
+
+            <!-- Access Point 2: Team Capacity -->
+            <div class="hub-card" data-launch="team">
+              <div class="hub-card-header">
+                <div class="hub-icon-box green">
+                  <i class="fa-solid fa-users-gear"></i>
+                </div>
+                <span class="hub-tag">Resource Allocation</span>
+              </div>
+              <h3>Team Capacity</h3>
+              <p>Monitor team member workload distribution, active assigned escalations, submitter activity, and bandwidth status.</p>
+              <div class="hub-card-stats">
+                <div class="hub-stat-item">
+                  <span class="hub-stat-val" id="dash-active-submitters">9</span>
+                  <span class="hub-stat-lbl">Team Members</span>
+                </div>
+                <div class="hub-stat-item">
+                  <span class="hub-stat-val" id="dash-completed-tasks">0</span>
+                  <span class="hub-stat-lbl">Resolved Tickets</span>
+                </div>
+              </div>
+              <button class="btn-hub-launch"><i class="fa-solid fa-arrow-right"></i> View Team Capacity</button>
+            </div>
+
+            <!-- Access Point 3: Escalation Analytics -->
+            <div class="hub-card" data-launch="analytics">
+              <div class="hub-card-header">
+                <div class="hub-icon-box amber">
+                  <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <span class="hub-tag">SLA & Health Metrics</span>
+              </div>
+              <h3>Escalation Analytics</h3>
+              <p>Analyze product category health scores, overall SLA compliance percentages, priority distribution, and resolution MTTR charts.</p>
+              <div class="hub-card-stats">
+                <div class="hub-stat-item">
+                  <span class="hub-stat-val">100%</span>
+                  <span class="hub-stat-lbl">SLA Compliance</span>
+                </div>
+                <div class="hub-stat-item">
+                  <span class="hub-stat-val">4.2h</span>
+                  <span class="hub-stat-lbl">Avg Resolution MTTR</span>
+                </div>
+              </div>
+              <button class="btn-hub-launch"><i class="fa-solid fa-arrow-right"></i> Open Escalation Analytics</button>
+            </div>
+
+            <!-- Access Point 4: KPI Tracker -->
+            <div class="hub-card" data-launch="kpi">
+              <div class="hub-card-header">
+                <div class="hub-icon-box blue">
+                  <i class="fa-solid fa-chart-column"></i>
+                </div>
+                <span class="hub-tag">10 Python App Modules</span>
+              </div>
+              <h3>KPI Tracker</h3>
+              <p>Complete 10-tab Support KPI suite: Daily entries, regex parser, weekly team info, individual user trends, 100-point team grading, and daily numbers.</p>
+              <div class="hub-card-stats">
+                <div class="hub-stat-item">
+                  <span class="hub-stat-val" id="dash-kpi-records">2,608</span>
+                  <span class="hub-stat-lbl">Historical Records</span>
+                </div>
+                <div class="hub-stat-item">
+                  <span class="hub-stat-val">10</span>
+                  <span class="hub-stat-lbl">Sub-Tab Modules</span>
+                </div>
+              </div>
+              <button class="btn-hub-launch"><i class="fa-solid fa-arrow-right"></i> Launch KPI Tracker</button>
+            </div>
+          </div>
+        </section>
+
         <!-- View 1: Kanban Sprint Board -->
-        <section id="view-board" class="view-panel active">
+        <section id="view-board" class="view-panel">
           <div class="board-header">
             <h2>Escalation Tracking Board</h2>
             <div class="board-controls">

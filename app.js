@@ -191,12 +191,12 @@ async function loadSupportKPIData() {
 // DOM Initialization
 document.addEventListener("DOMContentLoaded", () => {
   initAuth();
-  initNavigation();
-  initSearchAndFilters();
-  initModal();
-  initKPIModal();
-  initKPISubnav();
   initDeleteToggle();
+  initNavigation();
+  initDashboardHub();
+  initSearchAndFilters();
+  initTaskModal();
+  initKPI();
   loadSupportKPIData();
 
   if (checkAuth()) {
@@ -309,9 +309,9 @@ function initNavigation() {
         }
       });
 
-      // Hide top escalation stats row on KPI Tracker page
+      // Hide top escalation stats row on KPI Tracker page and Main Dashboard page
       if (statsGrid) {
-        if (targetView === "kpi") {
+        if (targetView === "kpi" || targetView === "dashboard") {
           statsGrid.style.display = "none";
         } else {
           statsGrid.style.display = "grid";
@@ -319,6 +319,67 @@ function initNavigation() {
       }
     });
   });
+}
+
+// Main Access Points Hub Dashboard
+function initDashboardHub() {
+  const hubCards = document.querySelectorAll(".hub-card");
+  const navItems = document.querySelectorAll(".nav-item");
+  const viewPanels = document.querySelectorAll(".view-panel");
+  const statsGrid = document.querySelector(".stats-grid");
+
+  hubCards.forEach(card => {
+    card.addEventListener("click", () => {
+      const launchView = card.getAttribute("data-launch");
+      if (!launchView) return;
+
+      navItems.forEach(n => {
+        if (n.getAttribute("data-view") === launchView) {
+          n.classList.add("active");
+        } else {
+          n.classList.remove("active");
+        }
+      });
+
+      viewPanels.forEach(panel => {
+        if (panel.id === `view-${launchView}`) {
+          panel.classList.add("active");
+        } else {
+          panel.classList.remove("active");
+        }
+      });
+
+      if (statsGrid) {
+        if (launchView === "kpi" || launchView === "dashboard") {
+          statsGrid.style.display = "none";
+        } else {
+          statsGrid.style.display = "grid";
+        }
+      }
+    });
+  });
+
+  const dashBtnNewTask = document.getElementById("dash-btn-new-task");
+  if (dashBtnNewTask) {
+    dashBtnNewTask.addEventListener("click", () => {
+      const taskModal = document.getElementById("task-modal");
+      if (taskModal) taskModal.style.display = "flex";
+    });
+  }
+
+  const dashBtnKpiEntry = document.getElementById("dash-btn-kpi-entry");
+  if (dashBtnKpiEntry) {
+    dashBtnKpiEntry.addEventListener("click", () => {
+      navItems.forEach(n => n.classList.toggle("active", n.getAttribute("data-view") === "kpi"));
+      viewPanels.forEach(p => p.classList.toggle("active", p.id === "view-kpi"));
+      if (statsGrid) statsGrid.style.display = "none";
+
+      const subItems = document.querySelectorAll(".kpi-subnav-item");
+      const subPanels = document.querySelectorAll(".kpi-subpanel");
+      subItems.forEach(s => s.classList.toggle("active", s.getAttribute("data-subtab") === "kpi-subtab-entry"));
+      subPanels.forEach(sp => sp.classList.toggle("active", sp.id === "kpi-subtab-entry"));
+    });
+  }
 }
 
 // Search and Filtering
@@ -573,6 +634,14 @@ function updateStats() {
   if (document.getElementById("stat-open-tasks")) document.getElementById("stat-open-tasks").textContent = openTasks;
   if (document.getElementById("stat-completed")) document.getElementById("stat-completed").textContent = completed;
   if (document.getElementById("stat-active-submitters")) document.getElementById("stat-active-submitters").textContent = submittersCount;
+
+  // Update Main Access Points Hub Dashboard stats
+  const starredCount = tasksState.filter(t => t.isStarred).length;
+  if (document.getElementById("dash-open-tasks")) document.getElementById("dash-open-tasks").textContent = openTasks;
+  if (document.getElementById("dash-starred-tasks")) document.getElementById("dash-starred-tasks").textContent = starredCount;
+  if (document.getElementById("dash-completed-tasks")) document.getElementById("dash-completed-tasks").textContent = completed;
+  if (document.getElementById("dash-active-submitters")) document.getElementById("dash-active-submitters").textContent = submittersCount;
+  if (document.getElementById("dash-kpi-records")) document.getElementById("dash-kpi-records").textContent = (supportKPIState.length || 2608).toLocaleString();
 
   const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
   
