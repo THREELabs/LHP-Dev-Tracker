@@ -390,17 +390,17 @@
 
           <!-- KPI Sub-Tab Navigation Bar (All 10 Python App Tabs) -->
           <div class="kpi-subnav-bar">
-            <button type="button" class="kpi-subnav-item active" data-subtab="kpi-subtab-overview" onclick="switchKPISubtab(this)"><i class="fa-solid fa-gauge-high"></i> Overview</button>
-            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-entry" onclick="switchKPISubtab(this)"><i class="fa-solid fa-pen-to-square"></i> 📝 Daily Entry</button>
-            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-manage" onclick="switchKPISubtab(this)"><i class="fa-solid fa-gear"></i> ⚙️ Manage / Delete</button>
-            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-daily" onclick="switchKPISubtab(this)"><i class="fa-solid fa-calendar-day"></i> 📅 Daily Report</button>
-            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-team-info" onclick="switchKPISubtab(this)"><i class="fa-solid fa-chart-pie"></i> 📊 Weekly Team Info</button>
-            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-weekly" onclick="switchKPISubtab(this)"><i class="fa-solid fa-calendar-week"></i> 🗓️ Weekly Individual Info</button>
-            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-trends" onclick="switchKPISubtab(this)"><i class="fa-solid fa-chart-line"></i> 📈 User Trends</button>
-            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-performance" onclick="switchKPISubtab(this)"><i class="fa-solid fa-bullseye"></i> 🎯 Performance Health</button>
-            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-grade" onclick="switchKPISubtab(this)"><i class="fa-solid fa-trophy"></i> 🏆 Team Grading</button>
-            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-numbers" onclick="switchKPISubtab(this)"><i class="fa-solid fa-arrow-down-1-9"></i> 🔢 Team Numbers</button>
-            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-admin" onclick="switchKPISubtab(this)"><i class="fa-solid fa-floppy-disk"></i> 💾 Backup / Restore</button>
+            <button type="button" class="kpi-subnav-item active" data-subtab="kpi-subtab-overview"><i class="fa-solid fa-gauge-high"></i> Overview</button>
+            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-entry"><i class="fa-solid fa-pen-to-square"></i> 📝 Daily Entry</button>
+            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-manage"><i class="fa-solid fa-gear"></i> ⚙️ Manage / Delete</button>
+            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-daily"><i class="fa-solid fa-calendar-day"></i> 📅 Daily Report</button>
+            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-team-info"><i class="fa-solid fa-chart-pie"></i> 📊 Weekly Team Info</button>
+            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-weekly"><i class="fa-solid fa-calendar-week"></i> 🗓️ Weekly Individual Info</button>
+            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-trends"><i class="fa-solid fa-chart-line"></i> 📈 User Trends</button>
+            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-performance"><i class="fa-solid fa-bullseye"></i> 🎯 Performance Health</button>
+            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-grade"><i class="fa-solid fa-trophy"></i> 🏆 Team Grading</button>
+            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-numbers"><i class="fa-solid fa-arrow-down-1-9"></i> 🔢 Team Numbers</button>
+            <button type="button" class="kpi-subnav-item" data-subtab="kpi-subtab-admin"><i class="fa-solid fa-floppy-disk"></i> 💾 Backup / Restore</button>
           </div>
 
           <!-- Sub-Tab 1: Overview -->
@@ -449,9 +449,12 @@
                       <th style="padding: 8px 12px;">ID</th>
                       <th style="padding: 8px 12px;">Date</th>
                       <th style="padding: 8px 12px;">Member</th>
-                      <th style="padding: 8px 12px;">Metric</th>
-                      <th style="padding: 8px 12px;">Value</th>
+                      <th style="padding: 8px 12px; text-align: center;">Closed</th>
+                      <th style="padding: 8px 12px; text-align: center;">Bottleneck</th>
+                      <th style="padding: 8px 12px; text-align: center;">Total Volume</th>
                       <th style="padding: 8px 12px;">Entry Type</th>
+                      <th style="padding: 8px 12px;">Activity Details</th>
+                      <th style="padding: 8px 12px; text-align: center;">Actions</th>
                     </tr>
                   </thead>
                   <tbody id="kpi-db-recent-body"></tbody>
@@ -493,9 +496,18 @@
                 <textarea id="parser-text" rows="6" placeholder="Paste email update... e.g.:&#10;Waiting on Contact: 5&#10;Waiting on Us: 2&#10;Dev Review: 1&#10;In Jira: 3&#10;Closed: 8"></textarea>
               </div>
 
-              <div style="display: flex; gap: 10px;">
-                <button class="btn btn-primary" id="btn-parse-save"><i class="fa-solid fa-robot"></i> Parse & Save KPI Data</button>
-                <button class="btn btn-secondary" id="btn-clear-parser">Clear Text</button>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-primary" id="btn-parse-save"><i class="fa-solid fa-robot"></i> Parse & Save KPI Data</button>
+                <button type="button" class="btn btn-secondary" id="btn-clear-parser"><i class="fa-solid fa-eraser"></i> Clear Text</button>
+              </div>
+
+              <!-- Live Parser Results Feedback Container -->
+              <div id="parser-feedback-box" style="display:none; margin-top: 16px; padding: 14px 18px; border-radius: 8px; background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; font-size: 0.85rem;">
+                <div style="font-weight: 700; font-size: 0.92rem; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;" id="parser-feedback-title">
+                  <i class="fa-solid fa-circle-check" style="color: #059669;"></i>
+                  <span>KPI Data Saved Successfully</span>
+                </div>
+                <div id="parser-feedback-details" style="line-height: 1.5;"></div>
               </div>
             </div>
           </div>
@@ -653,10 +665,12 @@
                       <th style="padding: 8px 12px;">ID</th>
                       <th style="padding: 8px 12px;">Date</th>
                       <th style="padding: 8px 12px;">Member</th>
-                      <th style="padding: 8px 12px;">Metric</th>
-                      <th style="padding: 8px 12px;">Value</th>
-                      <th style="padding: 8px 12px;">Entry Type</th>
-                      <th style="padding: 8px 12px;">Action</th>
+                      <th style="padding: 8px 12px; text-align: center;">Type</th>
+                      <th style="padding: 8px 12px; text-align: center;">Closed</th>
+                      <th style="padding: 8px 12px; text-align: center;">Bottleneck</th>
+                      <th style="padding: 8px 12px; text-align: center;">Total Volume</th>
+                      <th style="padding: 8px 12px;">Metric Details Breakdown</th>
+                      <th style="padding: 8px 12px; text-align: center;">Action</th>
                     </tr>
                   </thead>
                   <tbody id="kpi-db-full-body"></tbody>
@@ -701,9 +715,11 @@
                   <h3><i class="fa-solid fa-trophy" style="color: var(--lhp-blue); margin-right: 6px;"></i>Team Grading & 100-Point Algorithm Evaluation</h3>
                   <p style="font-size: 0.8rem; color: var(--text-muted);">Resolution Rate (50 pts) + Bottleneck Rate (50 pts) + Extra Credit (LHP Migrations).</p>
                 </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                  <label style="font-size: 0.78rem; font-weight: 600;">Week Ending:</label>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <button class="btn btn-secondary" id="btn-grade-prev"><i class="fa-solid fa-chevron-left"></i> Prev Week</button>
+                  <label style="font-size: 0.78rem; font-weight: 600;">Week Ending / Date:</label>
                   <input type="date" id="grade-date-input" style="padding: 6px 10px;">
+                  <button class="btn btn-secondary" id="btn-grade-next">Next Week <i class="fa-solid fa-chevron-right"></i></button>
                   <button class="btn btn-primary" id="btn-calculate-grade"><i class="fa-solid fa-calculator"></i> Calculate Team Grade</button>
                 </div>
               </div>
@@ -960,6 +976,96 @@ GOAL: Complete LHP Migrations for bonus.
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" id="btn-cancel-kpi-modal">Cancel</button>
           <button type="submit" class="btn btn-primary">Save KPI Entry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Support KPI Modal -->
+  <div class="modal-overlay" id="kpi-edit-modal">
+    <div class="modal-box" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3 id="kpi-edit-modal-title"><i class="fa-solid fa-pen-to-square" style="color: var(--lhp-blue);"></i> Edit KPI Submission</h3>
+        <button class="btn-close" id="btn-close-kpi-edit-modal">&times;</button>
+      </div>
+      <form id="kpi-edit-form">
+        <input type="hidden" id="kpi-edit-id">
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="kpi-edit-member">Team Member *</label>
+            <select id="kpi-edit-member" required>
+              <option value="Christie">Christie</option>
+              <option value="Kevin">Kevin</option>
+              <option value="Nishant">Nishant</option>
+              <option value="Adriana">Adriana</option>
+              <option value="Mark">Mark</option>
+              <option value="Rocky">Rocky</option>
+              <option value="Amy">Amy</option>
+              <option value="Lisa">Lisa</option>
+              <option value="Warren">Warren</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="kpi-edit-date">Date *</label>
+            <input type="date" id="kpi-edit-date" required>
+          </div>
+          <div class="form-group">
+            <label for="kpi-edit-type">Type</label>
+            <select id="kpi-edit-type">
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin: 12px 0 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">
+          📊 Metric Values Breakdown
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group" style="margin-bottom: 6px;">
+            <label for="kpi-edit-closed" style="color: #059669; font-weight: 700;">Closed (Resolved) *</label>
+            <input type="number" id="kpi-edit-closed" min="0" value="0" style="border-color: #a7f3d0; background: #f0fdf4;">
+          </div>
+          <div class="form-group" style="margin-bottom: 6px;">
+            <label for="kpi-edit-woc">Waiting on Contact</label>
+            <input type="number" id="kpi-edit-woc" min="0" value="0">
+          </div>
+          <div class="form-group" style="margin-bottom: 6px;">
+            <label for="kpi-edit-wou" style="color: #b45309; font-weight: 700;">Waiting on Us (Bottleneck)</label>
+            <input type="number" id="kpi-edit-wou" min="0" value="0" style="border-color: #fde68a; background: #fffbeb;">
+          </div>
+          <div class="form-group" style="margin-bottom: 6px;">
+            <label for="kpi-edit-dev" style="color: #b45309; font-weight: 700;">Dev Review (Bottleneck)</label>
+            <input type="number" id="kpi-edit-dev" min="0" value="0" style="border-color: #fde68a; background: #fffbeb;">
+          </div>
+          <div class="form-group" style="margin-bottom: 6px;">
+            <label for="kpi-edit-jira" style="color: #b45309; font-weight: 700;">In Jira (Bottleneck)</label>
+            <input type="number" id="kpi-edit-jira" min="0" value="0" style="border-color: #fde68a; background: #fffbeb;">
+          </div>
+          <div class="form-group" style="margin-bottom: 6px;">
+            <label for="kpi-edit-backlog">Backlog Health/Activation</label>
+            <input type="number" id="kpi-edit-backlog" min="0" value="0">
+          </div>
+          <div class="form-group" style="margin-bottom: 6px;">
+            <label for="kpi-edit-customer">Customer Response</label>
+            <input type="number" id="kpi-edit-customer" min="0" value="0">
+          </div>
+          <div class="form-group" style="margin-bottom: 6px;">
+            <label for="kpi-edit-migrations">LHP Migrations</label>
+            <input type="number" id="kpi-edit-migrations" min="0" value="0">
+          </div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Calculated Total Volume:</span>
+          <strong id="kpi-edit-calculated-total" style="font-size: 1.05rem; color: var(--lhp-blue);">0 tickets</strong>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 14px;">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-kpi-edit-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-kpi-edit"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
         </div>
       </form>
     </div>

@@ -90,17 +90,6 @@ async function fetchTasksFromCloud() {
       tasksState = fetchedTasks;
       saveTasksToLocalStorage();
 
-      // Cloud KPI Sync
-      if (record && Array.isArray(record.kpis) && record.kpis.length > 0) {
-        const cloudKpis = record.kpis;
-        const existingIds = new Set(supportKPIState.map(k => k.id));
-        cloudKpis.forEach(ck => {
-          if (!existingIds.has(ck.id)) {
-            supportKPIState.unshift(ck);
-          }
-        });
-      }
-
       renderBoard();
       updateStats();
       renderKPI();
@@ -167,25 +156,105 @@ function loadTasksState() {
   return [];
 }
 
+const KPI_STORAGE_KEY = "lhp_support_kpis_state_v1";
+
+function saveKPIToLocalStorage() {
+  try {
+    localStorage.setItem(KPI_STORAGE_KEY, JSON.stringify(supportKPIState));
+  } catch (err) {
+    console.warn("Could not save KPIs to localStorage:", err);
+  }
+}
+
+function loadKPIFromLocalStorage() {
+  try {
+    const stored = localStorage.getItem(KPI_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not load KPIs from localStorage:", err);
+  }
+  return null;
+}
+
 // App State
 let tasksState = loadTasksState();
 let supportKPIState = [];
 
-async function loadSupportKPIData() {
+// Save KPIs to Server Disk API (/api/kpis), LocalStorage, & Cloud Database
+async function saveKPIDatabase() {
+  saveKPIToLocalStorage();
+
   try {
-    const res = await fetch("kpi_data.json");
+    fetch("/api/kpis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(supportKPIState)
+    }).catch(err => console.warn("Local KPI disk save notification:", err));
+  } catch (err) {
+    console.warn("Could not post to /api/kpis:", err);
+  }
+
+  await saveTasksState();
+}
+
+async function loadSupportKPIData() {
+  const localCache = loadKPIFromLocalStorage();
+  if (localCache !== null) {
+    supportKPIState = localCache;
+  }
+
+  try {
+    let res = await fetch("/api/kpis");
+    if (!res.ok) {
+      res = await fetch("kpi_data.json");
+    }
     if (res.ok) {
       const data = await res.json();
-      const customEntries = JSON.parse(localStorage.getItem("lhp_custom_kpis") || "[]");
-      supportKPIState = [...customEntries, ...data];
-    } else {
-      supportKPIState = JSON.parse(localStorage.getItem("lhp_custom_kpis") || "[]");
+      if (Array.isArray(data)) {
+        if (data.length > 0 || localCache === null) {
+          supportKPIState = data;
+          saveKPIToLocalStorage();
+        }
+      }
     }
   } catch (err) {
-    console.warn("Could not load kpi_data.json, loading local custom entries", err);
-    supportKPIState = JSON.parse(localStorage.getItem("lhp_custom_kpis") || "[]");
+    console.warn("Could not load kpi database from server API", err);
   }
+
+  // Populate default dates if unset
+  const latestDate = typeof getLatestKPIDate === "function" ? getLatestKPIDate() : formatLocalIsoDate(new Date());
+  const dailyDate = document.getElementById("daily-report-date");
+  const weeklyDate = document.getElementById("weekly-report-date");
+  const teamInfoDate = document.getElementById("team-info-date");
+  const gradeDate = document.getElementById("grade-date-input");
+  const numbersDate = document.getElementById("numbers-report-date");
+
+  if (dailyDate && !dailyDate.value) dailyDate.value = latestDate;
+  if (weeklyDate && !weeklyDate.value) weeklyDate.value = latestDate;
+  if (teamInfoDate && !teamInfoDate.value) teamInfoDate.value = latestDate;
+  if (gradeDate && !gradeDate.value) gradeDate.value = latestDate;
+  if (numbersDate && !numbersDate.value) numbersDate.value = latestDate;
+
   renderKPI();
+  renderKPIDbManager();
+
+  // Re-render whichever subtab is currently visible
+  const activeSubtab = document.querySelector(".kpi-subpanel.active");
+  if (activeSubtab) {
+    if (activeSubtab.id === "kpi-subtab-daily" && typeof renderDailyKPIReport === "function") renderDailyKPIReport();
+    if (activeSubtab.id === "kpi-subtab-team-info" && typeof renderKPITeamInfo === "function") renderKPITeamInfo();
+    if (activeSubtab.id === "kpi-subtab-weekly" && typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
+    if (activeSubtab.id === "kpi-subtab-trends" && typeof renderKPITrends === "function") renderKPITrends();
+    if (activeSubtab.id === "kpi-subtab-performance" && typeof renderKPIPerformance === "function") renderKPIPerformance();
+    if (activeSubtab.id === "kpi-subtab-grade" && typeof renderKPIGrade === "function") renderKPIGrade();
+    if (activeSubtab.id === "kpi-subtab-numbers" && typeof renderKPINumbers === "function") renderKPINumbers();
+    if (activeSubtab.id === "kpi-subtab-manage" && typeof renderKPIDbManager === "function") renderKPIDbManager();
+  }
 }
 
 // DOM Initialization
@@ -317,6 +386,22 @@ function initNavigation() {
           statsGrid.style.display = "grid";
         }
       }
+
+      if (targetView === "kpi") {
+        renderKPI();
+        renderKPIDbManager();
+        const activeSubtab = document.querySelector(".kpi-subpanel.active");
+        if (activeSubtab) {
+          if (activeSubtab.id === "kpi-subtab-daily" && typeof renderDailyKPIReport === "function") renderDailyKPIReport();
+          if (activeSubtab.id === "kpi-subtab-team-info" && typeof renderKPITeamInfo === "function") renderKPITeamInfo();
+          if (activeSubtab.id === "kpi-subtab-weekly" && typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
+          if (activeSubtab.id === "kpi-subtab-trends" && typeof renderKPITrends === "function") renderKPITrends();
+          if (activeSubtab.id === "kpi-subtab-performance" && typeof renderKPIPerformance === "function") renderKPIPerformance();
+          if (activeSubtab.id === "kpi-subtab-grade" && typeof renderKPIGrade === "function") renderKPIGrade();
+          if (activeSubtab.id === "kpi-subtab-numbers" && typeof renderKPINumbers === "function") renderKPINumbers();
+          if (activeSubtab.id === "kpi-subtab-manage" && typeof renderKPIDbManager === "function") renderKPIDbManager();
+        }
+      }
     });
   });
 }
@@ -354,6 +439,22 @@ function initDashboardHub() {
           statsGrid.style.display = "none";
         } else {
           statsGrid.style.display = "grid";
+        }
+      }
+
+      if (launchView === "kpi") {
+        renderKPI();
+        renderKPIDbManager();
+        const activeSubtab = document.querySelector(".kpi-subpanel.active");
+        if (activeSubtab) {
+          if (activeSubtab.id === "kpi-subtab-daily" && typeof renderDailyKPIReport === "function") renderDailyKPIReport();
+          if (activeSubtab.id === "kpi-subtab-team-info" && typeof renderKPITeamInfo === "function") renderKPITeamInfo();
+          if (activeSubtab.id === "kpi-subtab-weekly" && typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
+          if (activeSubtab.id === "kpi-subtab-trends" && typeof renderKPITrends === "function") renderKPITrends();
+          if (activeSubtab.id === "kpi-subtab-performance" && typeof renderKPIPerformance === "function") renderKPIPerformance();
+          if (activeSubtab.id === "kpi-subtab-grade" && typeof renderKPIGrade === "function") renderKPIGrade();
+          if (activeSubtab.id === "kpi-subtab-numbers" && typeof renderKPINumbers === "function") renderKPINumbers();
+          if (activeSubtab.id === "kpi-subtab-manage" && typeof renderKPIDbManager === "function") renderKPIDbManager();
         }
       }
     });
@@ -879,12 +980,15 @@ function renderKPI() {
 
   submitterContainer.innerHTML = `<div class="kpi-scorecard-list">${scorecardHtml}</div>`;
 
-  // 4. Support KPIs Database (support_kpis.db) Metrics & Table
+  // 4. Support KPIs Database Metrics & Table
   const totalDbCountEl = document.getElementById("kpi-total-db-count");
   const metricsGrid = document.getElementById("kpi-support-metrics-grid");
   const recentBody = document.getElementById("kpi-db-recent-body");
 
-  if (totalDbCountEl) totalDbCountEl.textContent = supportKPIState.length.toLocaleString();
+  if (totalDbCountEl) {
+    const totalVolume = supportKPIState.reduce((acc, r) => acc + getEntryTotal(r), 0);
+    totalDbCountEl.textContent = `${supportKPIState.length.toLocaleString()} logs (${totalVolume.toLocaleString()} tickets)`;
+  }
 
   if (metricsGrid) {
     const kpiMetricTypes = [
@@ -899,8 +1003,8 @@ function renderKPI() {
     ];
 
     metricsGrid.innerHTML = kpiMetricTypes.map(m => {
-      const filtered = supportKPIState.filter(k => k.metric === m.name);
-      const totalVal = filtered.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
+      const totalVal = supportKPIState.reduce((acc, curr) => acc + getEntryMetric(curr, m.name), 0);
+      const activeCount = supportKPIState.filter(k => getEntryMetric(k, m.name) > 0).length;
       return `
         <div class="kpi-scorecard" style="padding: 12px 14px;">
           <div class="kpi-scorecard-header">
@@ -908,7 +1012,7 @@ function renderKPI() {
             <i class="fa-solid ${m.icon} kpi-icon" style="color: ${m.color}; font-size: 0.95rem;"></i>
           </div>
           <div class="kpi-val" style="font-size: 1.3rem; margin-bottom: 2px;">${totalVal.toLocaleString()}</div>
-          <div style="font-size: 0.68rem; color: var(--text-muted);">${filtered.length} log entries</div>
+          <div style="font-size: 0.68rem; color: var(--text-muted);">${activeCount} active submissions</div>
         </div>
       `;
     }).join("");
@@ -916,16 +1020,78 @@ function renderKPI() {
 
   if (recentBody) {
     const recentRows = supportKPIState.slice(0, 10);
-    recentBody.innerHTML = recentRows.map(r => `
-      <tr style="border-bottom: 1px solid #f1f5f9;">
-        <td style="padding: 8px 12px; font-weight: 700; color: var(--text-dim);">#${r.id || '-'}</td>
-        <td style="padding: 8px 12px;">${r.date || '-'}</td>
-        <td style="padding: 8px 12px; font-weight: 600; color: var(--lhp-blue);">${r.member || '-'}</td>
-        <td style="padding: 8px 12px;"><span class="category-tag smartapp1003" style="font-size: 0.65rem;">${r.metric || '-'}</span></td>
-        <td style="padding: 8px 12px; font-weight: 700; color: var(--text-main);">${r.value}</td>
-        <td style="padding: 8px 12px;"><span class="priority-pill priority-medium">${r.entry_type || 'Daily'}</span></td>
-      </tr>
-    `).join("");
+    recentBody.innerHTML = recentRows.map(r => {
+      const closed = getEntryMetric(r, "Closed");
+      const bottleneck = getEntryBottleneck(r);
+      const total = getEntryTotal(r);
+      
+      let detailsSummary = "";
+      if (r.metrics) {
+        detailsSummary = Object.entries(r.metrics)
+          .filter(([_, v]) => Number(v) > 0)
+          .map(([k, v]) => `<strong>${k}</strong>: ${v}`)
+          .join(", ");
+      } else {
+        detailsSummary = `${r.metric}: ${r.value}`;
+      }
+
+      return `
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 12px; font-weight: 700; color: var(--text-dim);">#${r.id || '-'}</td>
+          <td style="padding: 8px 12px; font-weight: 600;">${r.date || '-'}</td>
+          <td style="padding: 8px 12px; font-weight: 700; color: var(--lhp-blue);">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div class="mini-avatar" style="width: 22px; height: 22px; font-size: 0.65rem;">${(r.member || '??').slice(0, 2).toUpperCase()}</div>
+              <span>${r.member || '-'}</span>
+            </div>
+          </td>
+          <td style="padding: 8px 12px; text-align: center; font-weight: 800; color: #10b981; background: #f0fdf4;">${closed}</td>
+          <td style="padding: 8px 12px; text-align: center; font-weight: 800; color: ${bottleneck > 0 ? '#b45309' : 'var(--text-dim)'}; background: ${bottleneck > 0 ? '#fffbeb' : 'transparent'};">${bottleneck}</td>
+          <td style="padding: 8px 12px; text-align: center; font-weight: 800; color: var(--text-main); background: #f8fafc;">${total}</td>
+          <td style="padding: 8px 12px;"><span class="priority-pill priority-medium">${r.entry_type || 'Daily'}</span></td>
+          <td style="padding: 8px 12px; font-size: 0.72rem; color: var(--text-muted); max-width: 300px;">${detailsSummary || 'All 0'}</td>
+          <td style="padding: 8px 12px; text-align: center; white-space: nowrap;">
+            <div style="display: inline-flex; gap: 6px;">
+              <button class="btn-edit-kpi-recent" data-id="${r.id}" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.72rem; font-weight: 600;">
+                <i class="fa-solid fa-pen-to-square"></i> Edit
+              </button>
+              <button class="btn-delete-kpi-recent" data-id="${r.id}" style="background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.72rem; font-weight: 600;">
+                <i class="fa-solid fa-trash-can"></i> Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    // Attach edit handlers for recent entries
+    recentBody.querySelectorAll(".btn-edit-kpi-recent").forEach(btn => {
+      btn.onclick = () => {
+        const entryId = btn.dataset.id;
+        const targetRecord = supportKPIState.find(k => String(k.id) === String(entryId));
+        if (targetRecord) {
+          openEditKPIModal(targetRecord);
+        }
+      };
+    });
+
+    // Attach delete handlers for recent entries
+    recentBody.querySelectorAll(".btn-delete-kpi-recent").forEach(btn => {
+      btn.onclick = () => {
+        const entryId = btn.dataset.id;
+        const targetRecord = supportKPIState.find(k => String(k.id) === String(entryId));
+        const recordLabel = targetRecord ? `${targetRecord.member} on ${targetRecord.date} (Total: ${getEntryTotal(targetRecord)} tickets)` : `Record #${entryId}`;
+        if (confirm(`Are you sure you want to delete the KPI submission for ${recordLabel}?`)) {
+          supportKPIState = supportKPIState.filter(k => String(k.id) !== String(entryId));
+          saveKPIDatabase();
+          renderKPI();
+          if (typeof renderKPIDbManager === "function") renderKPIDbManager();
+          if (typeof renderDailyKPIReport === "function") renderDailyKPIReport();
+          if (typeof renderKPITeamInfo === "function") renderKPITeamInfo();
+          if (typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
+        }
+      };
+    });
   }
 }
 
@@ -940,15 +1106,15 @@ function initKPIModal() {
 
   if (!modal || !form) return;
 
-  // Default date picker to today
+  // Default date picker to today or latest KPI date
   const dateInput = document.getElementById("kpi-entry-date");
-  if (dateInput) dateInput.value = new Date().toISOString().split("T")[0];
+  if (dateInput) dateInput.value = formatLocalIsoDate(new Date());
 
   const openModal = () => modal.classList.add("active");
   const closeModal = () => {
     modal.classList.remove("active");
     form.reset();
-    if (dateInput) dateInput.value = new Date().toISOString().split("T")[0];
+    if (dateInput) dateInput.value = formatLocalIsoDate(new Date());
   };
 
   if (btnLog) btnLog.addEventListener("click", openModal);
@@ -960,7 +1126,7 @@ function initKPIModal() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(supportKPIState, null, 2));
       const downloadAnchor = document.createElement("a");
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `support_kpis_export_${new Date().toISOString().split("T")[0]}.json`);
+      downloadAnchor.setAttribute("download", `support_kpis_export_${formatLocalIsoDate(new Date())}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -970,26 +1136,147 @@ function initKPIModal() {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
-    const newEntry = {
-      id: supportKPIState.length + 1,
-      date: document.getElementById("kpi-entry-date").value,
-      member: document.getElementById("kpi-entry-member").value,
-      entry_type: document.getElementById("kpi-entry-type").value,
-      metric: document.getElementById("kpi-entry-metric").value,
-      value: Number(document.getElementById("kpi-entry-value").value) || 0
-    };
+    const date = document.getElementById("kpi-entry-date").value;
+    const member = document.getElementById("kpi-entry-member").value;
+    const entryType = document.getElementById("kpi-entry-type").value || "Daily";
+    const metric = document.getElementById("kpi-entry-metric").value;
+    const value = Number(document.getElementById("kpi-entry-value").value) || 0;
 
-    supportKPIState.unshift(newEntry);
+    // Check if an existing entry exists for this member and date
+    let existing = supportKPIState.find(k => k.date === date && k.member === member && (k.entry_type || 'Daily') === entryType);
+    if (existing) {
+      if (!existing.metrics) {
+        existing.metrics = {
+          "Waiting on Contact": 0,
+          "Waiting on Us": 0,
+          "Dev Review": 0,
+          "In Jira": 0,
+          "Closed": 0,
+          "Backlog Health/Activation": 0,
+          "Customer Response": 0,
+          "LHP Migrations": 0
+        };
+      }
+      existing.metrics[metric] = value;
+      existing.total = Object.values(existing.metrics).reduce((a, b) => a + (Number(b) || 0), 0);
+    } else {
+      const metrics = {
+        "Waiting on Contact": 0,
+        "Waiting on Us": 0,
+        "Dev Review": 0,
+        "In Jira": 0,
+        "Closed": 0,
+        "Backlog Health/Activation": 0,
+        "Customer Response": 0,
+        "LHP Migrations": 0
+      };
+      metrics[metric] = value;
+      const newEntry = {
+        id: Date.now(),
+        date: date,
+        member: member,
+        entry_type: entryType,
+        metrics: metrics,
+        total: Object.values(metrics).reduce((a, b) => a + (Number(b) || 0), 0)
+      };
+      supportKPIState.unshift(newEntry);
+    }
     
-    // Save custom entries locally & sync to Cloud Database
-    const customEntries = JSON.parse(localStorage.getItem("lhp_custom_kpis") || "[]");
-    customEntries.unshift(newEntry);
-    localStorage.setItem("lhp_custom_kpis", JSON.stringify(customEntries));
+    // Submit to Server & Cloud Database (No LocalStorage)
+    saveKPIDatabase();
 
-    saveTasksState();
     renderKPI();
+    if (typeof renderDailyKPIReport === "function") renderDailyKPIReport();
+    if (typeof renderKPITeamInfo === "function") renderKPITeamInfo();
+    if (typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
+    if (typeof renderKPIDbManager === "function") renderKPIDbManager();
     closeModal();
   });
+}
+
+// Universal Record Accessors for Unified & Legacy KPI Submissions
+function getEntryMetric(entry, metricName) {
+  if (!entry) return 0;
+  if (entry.metrics && entry.metrics[metricName] !== undefined) {
+    return Number(entry.metrics[metricName]) || 0;
+  }
+  if (entry.metric === metricName) {
+    return Number(entry.value) || 0;
+  }
+  return 0;
+}
+
+function getEntryTotal(entry) {
+  if (!entry) return 0;
+  if (typeof entry.total === "number") return entry.total;
+  if (entry.metrics) {
+    return Object.values(entry.metrics).reduce((a, b) => a + (Number(b) || 0), 0);
+  }
+  return Number(entry.value) || 0;
+}
+
+function getEntryClosed(entry) {
+  return getEntryMetric(entry, "Closed");
+}
+
+function getEntryBottleneck(entry) {
+  return getEntryMetric(entry, "Waiting on Us") + getEntryMetric(entry, "Dev Review") + getEntryMetric(entry, "In Jira");
+}
+
+// Date & Range Helper Utilities for KPI Analytics
+function parseLocalDate(dateStr) {
+  if (!dateStr) return new Date();
+  if (typeof dateStr !== "string") return new Date(dateStr);
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    return new Date(y, m, d);
+  }
+  return new Date(dateStr);
+}
+
+function formatLocalIsoDate(d) {
+  if (!d || !(d instanceof Date) || isNaN(d)) d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function getLatestKPIDate() {
+  if (supportKPIState && supportKPIState.length > 0) {
+    const validDates = supportKPIState.map(k => k.date).filter(Boolean).sort();
+    if (validDates.length > 0) {
+      return validDates[validDates.length - 1];
+    }
+  }
+  return formatLocalIsoDate(new Date());
+}
+
+function getWeekRange(dateStr) {
+  const sel = parseLocalDate(dateStr || getLatestKPIDate());
+  const dayOfWeek = sel.getDay(); // 0 is Sun, 1 is Mon...
+  const diffToMon = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+  
+  const monday = new Date(sel);
+  monday.setDate(sel.getDate() + diffToMon);
+  
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  return {
+    monday,
+    friday,
+    sunday,
+    monStr: formatLocalIsoDate(monday),
+    friStr: formatLocalIsoDate(friday),
+    sunStr: formatLocalIsoDate(sunday)
+  };
 }
 
 // Global Failproof KPI Sub-Tab Navigation Handler
@@ -1015,6 +1302,7 @@ window.switchKPISubtab = function(item) {
   });
 
   // Render tab specific visuals
+  if (targetSubtab === "kpi-subtab-overview") renderKPI();
   if (targetSubtab === "kpi-subtab-daily") renderDailyKPIReport();
   if (targetSubtab === "kpi-subtab-team-info") renderKPITeamInfo();
   if (targetSubtab === "kpi-subtab-weekly") renderWeeklyKPISummary();
@@ -1033,8 +1321,8 @@ function initKPISubnav() {
     }
   });
 
-  // Init date pickers
-  const todayStr = new Date().toISOString().split("T")[0];
+  // Init date pickers with latest database date or today
+  const defaultDateStr = getLatestKPIDate();
   const parserDate = document.getElementById("parser-date");
   const dailyDate = document.getElementById("daily-report-date");
   const weeklyDate = document.getElementById("weekly-report-date");
@@ -1042,15 +1330,18 @@ function initKPISubnav() {
   const gradeDate = document.getElementById("grade-date-input");
   const numbersDate = document.getElementById("numbers-report-date");
 
-  if (parserDate) parserDate.value = todayStr;
-  if (dailyDate) dailyDate.value = todayStr;
-  if (weeklyDate) weeklyDate.value = todayStr;
-  if (teamInfoDate) teamInfoDate.value = todayStr;
-  if (gradeDate) gradeDate.value = todayStr;
-  if (numbersDate) numbersDate.value = todayStr;
+  if (parserDate && !parserDate.value) parserDate.value = formatLocalIsoDate(new Date());
+  if (dailyDate && !dailyDate.value) dailyDate.value = defaultDateStr;
+  if (weeklyDate && !weeklyDate.value) weeklyDate.value = defaultDateStr;
+  if (teamInfoDate && !teamInfoDate.value) teamInfoDate.value = defaultDateStr;
+  if (gradeDate && !gradeDate.value) gradeDate.value = defaultDateStr;
+  if (numbersDate && !numbersDate.value) numbersDate.value = defaultDateStr;
+}
 
+function initKPI() {
   initKPISubnav();
   initKPIModal();
+  initKPIEditModal();
   initKPIParser();
   initKPIDaily();
   initKPITeamInfo();
@@ -1072,36 +1363,62 @@ function initKPITeamInfo() {
   if (!dateInput) return;
 
   const shiftWeek = (days) => {
-    const curr = new Date(dateInput.value || new Date());
+    const curr = parseLocalDate(dateInput.value || getLatestKPIDate());
     curr.setDate(curr.getDate() + days);
-    dateInput.value = curr.toISOString().split("T")[0];
+    dateInput.value = formatLocalIsoDate(curr);
     renderKPITeamInfo();
   };
 
-  if (btnPrev) btnPrev.addEventListener("click", () => shiftWeek(-7));
-  if (btnNext) btnNext.addEventListener("click", () => shiftWeek(7));
-  dateInput.addEventListener("change", renderKPITeamInfo);
+  if (btnPrev) btnPrev.onclick = () => shiftWeek(-7);
+  if (btnNext) btnNext.onclick = () => shiftWeek(7);
+  dateInput.onchange = renderKPITeamInfo;
+  dateInput.oninput = renderKPITeamInfo;
 }
 
 function renderKPITeamInfo() {
   const summaryEl = document.getElementById("team-info-text-summary");
   const visualsEl = document.getElementById("team-info-visuals");
+  const dateInput = document.getElementById("team-info-date");
 
   if (!summaryEl || !visualsEl) return;
 
-  const recent700 = supportKPIState.slice(0, 700);
+  const selDateStr = dateInput?.value || getLatestKPIDate();
+  const week = getWeekRange(selDateStr);
+  const weekRecords = supportKPIState.filter(k => k.date >= week.monStr && k.date <= week.sunStr);
+
+  if (weekRecords.length === 0) {
+    summaryEl.textContent = `--- WEEKLY TEAM METRICS ---\n\n📅 Target Week: Mon, ${week.monStr} to Fri, ${week.friStr}\n\nNo KPI records found for this week in database.`;
+    visualsEl.innerHTML = `<div style="color: var(--text-dim); font-size: 0.82rem; padding: 20px; text-align: center;">No visual charts available for selected week.</div>`;
+    return;
+  }
+
+  const metricTypes = [
+    "Waiting on Contact",
+    "Waiting on Us",
+    "Dev Review",
+    "In Jira",
+    "Closed",
+    "Backlog Health/Activation",
+    "Customer Response",
+    "LHP Migrations"
+  ];
+
   const metricTotals = {};
-  recent700.forEach(r => {
-    metricTotals[r.metric] = (metricTotals[r.metric] || 0) + Number(r.value);
+  metricTypes.forEach(met => {
+    metricTotals[met] = weekRecords.reduce((acc, r) => acc + getEntryMetric(r, met), 0);
   });
 
-  let text = `--- WEEKLY TEAM METRICS ---\n\n🏆 TOTAL TEAM METRICS:\n`;
+  const totalVal = Object.values(metricTotals).reduce((a, b) => a + b, 0) || 1;
+  const closedCount = metricTotals["Closed"] || 0;
+  const resolutionRate = totalVal > 0 ? ((closedCount / totalVal) * 100).toFixed(1) : "0.0";
+
+  let text = `--- WEEKLY TEAM METRICS ---\n\n📅 Target Week: Mon, ${week.monStr} to Fri, ${week.friStr} (Mon-Fri)\n📦 Total Volume Touched: ${totalVal.toLocaleString()} tickets\n🎯 Team Resolution Rate: ${resolutionRate}%\n\n🏆 TOTAL TEAM METRICS BREAKDOWN:\n`;
   Object.entries(metricTotals).forEach(([met, val]) => {
-    text += `  • ${met}: ${val.toLocaleString()}\n`;
+    const pct = Math.round((val / totalVal) * 100);
+    text += `  • ${met.padEnd(25)}: ${String(val).padStart(4)} (${pct}%)\n`;
   });
   summaryEl.textContent = text;
 
-  const totalVal = Object.values(metricTotals).reduce((a, b) => a + b, 0) || 1;
   visualsEl.innerHTML = Object.entries(metricTotals).map(([met, val]) => {
     const pct = Math.round((val / totalVal) * 100);
     return `
@@ -1113,33 +1430,27 @@ function renderKPITeamInfo() {
   }).join("");
 }
 
-function parseLocalDate(dateStr) {
-  if (!dateStr) return new Date();
-  if (typeof dateStr !== "string") return new Date(dateStr);
-  const parts = dateStr.split("-");
-  if (parts.length === 3) {
-    const y = parseInt(parts[0], 10);
-    const m = parseInt(parts[1], 10) - 1;
-    const d = parseInt(parts[2], 10);
-    return new Date(y, m, d);
-  }
-  return new Date(dateStr);
-}
-
-function formatLocalIsoDate(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
 // Sub-Tab 8: 100-Point Team Grading & ASCII Battle Engine
 function initKPIGrade() {
   const btn = document.getElementById("btn-calculate-grade");
+  const btnPrev = document.getElementById("btn-grade-prev");
+  const btnNext = document.getElementById("btn-grade-next");
   const dateInput = document.getElementById("grade-date-input");
 
-  if (btn) btn.addEventListener("click", renderKPIGrade);
-  if (dateInput) dateInput.addEventListener("change", renderKPIGrade);
+  const shiftWeek = (days) => {
+    const curr = parseLocalDate(dateInput?.value || getLatestKPIDate());
+    curr.setDate(curr.getDate() + days);
+    if (dateInput) dateInput.value = formatLocalIsoDate(curr);
+    renderKPIGrade();
+  };
+
+  if (btn) btn.onclick = renderKPIGrade;
+  if (btnPrev) btnPrev.onclick = () => shiftWeek(-7);
+  if (btnNext) btnNext.onclick = () => shiftWeek(7);
+  if (dateInput) {
+    dateInput.onchange = renderKPIGrade;
+    dateInput.oninput = renderKPIGrade;
+  }
 }
 
 function renderKPIGrade() {
@@ -1173,10 +1484,10 @@ function renderKPIGrade() {
 
   const calcGradeForRange = (mStr, fStr) => {
     const recs = supportKPIState.filter(k => k.date >= mStr && k.date <= fStr);
-    const total = recs.reduce((a, b) => a + Number(b.value), 0);
-    const closed = recs.filter(k => k.metric === "Closed").reduce((a, b) => a + Number(b.value), 0);
-    const bottleneck = recs.filter(k => ["Waiting on Us", "Dev Review", "In Jira"].includes(k.metric)).reduce((a, b) => a + Number(b.value), 0);
-    const migrations = recs.filter(k => k.metric === "LHP Migrations").reduce((a, b) => a + Number(b.value), 0);
+    const total = recs.reduce((a, b) => a + getEntryTotal(b), 0);
+    const closed = recs.reduce((a, b) => a + getEntryMetric(b, "Closed"), 0);
+    const bottleneck = recs.reduce((a, b) => a + getEntryBottleneck(b), 0);
+    const migrations = recs.reduce((a, b) => a + getEntryMetric(b, "LHP Migrations"), 0);
 
     const resPct = total > 0 ? (closed / total) : 0;
     const botPct = total > 0 ? (bottleneck / total) : 0;
@@ -1205,10 +1516,10 @@ function renderKPIGrade() {
 
   members.forEach(m => {
     const mRecs = supportKPIState.filter(k => k.member === m && k.date >= cMonStr && k.date <= cFriStr);
-    const mTot = mRecs.reduce((a, b) => a + Number(b.value), 0);
-    const mClo = mRecs.filter(k => k.metric === "Closed").reduce((a, b) => a + Number(b.value), 0);
-    const mBot = mRecs.filter(k => ["Waiting on Us", "Dev Review", "In Jira"].includes(k.metric)).reduce((a, b) => a + Number(b.value), 0);
-    const mMig = mRecs.filter(k => k.metric === "LHP Migrations").reduce((a, b) => a + Number(b.value), 0);
+    const mTot = mRecs.reduce((a, b) => a + getEntryTotal(b), 0);
+    const mClo = mRecs.reduce((a, b) => a + getEntryMetric(b, "Closed"), 0);
+    const mBot = mRecs.reduce((a, b) => a + getEntryBottleneck(b), 0);
+    const mMig = mRecs.reduce((a, b) => a + getEntryMetric(b, "LHP Migrations"), 0);
 
     const mResPct = mTot > 0 ? (mClo / mTot) : 0;
     const mBotPct = mTot > 0 ? (mBot / mTot) : 0;
@@ -1267,15 +1578,16 @@ function initKPINumbers() {
   if (!dateInput) return;
 
   const shiftWeek = (days) => {
-    const curr = parseLocalDate(dateInput.value);
+    const curr = parseLocalDate(dateInput.value || getLatestKPIDate());
     curr.setDate(curr.getDate() + days);
     dateInput.value = formatLocalIsoDate(curr);
     renderKPINumbers();
   };
 
-  if (btnPrev) btnPrev.addEventListener("click", () => shiftWeek(-7));
-  if (btnNext) btnNext.addEventListener("click", () => shiftWeek(7));
-  dateInput.addEventListener("change", renderKPINumbers);
+  if (btnPrev) btnPrev.onclick = () => shiftWeek(-7);
+  if (btnNext) btnNext.onclick = () => shiftWeek(7);
+  dateInput.onchange = renderKPINumbers;
+  dateInput.oninput = renderKPINumbers;
 }
 
 function renderKPINumbers() {
@@ -1286,7 +1598,7 @@ function renderKPINumbers() {
   if (!cardsEl || !tableEl || !dateInput) return;
 
   // Calculate Monday and Friday of selected date's week using parseLocalDate to prevent UTC timezone offset shift
-  const selDate = parseLocalDate(dateInput.value);
+  const selDate = parseLocalDate(dateInput.value || getLatestKPIDate());
   const dayOfWeek = selDate.getDay(); // 0 is Sun, 1 is Mon...
   const diffToMon = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
   
@@ -1302,12 +1614,12 @@ function renderKPINumbers() {
   const target = 10;
 
   cardsEl.innerHTML = members.map(m => {
-    const weekClosedRecs = supportKPIState.filter(k => {
-      return k.member === m && k.metric === "Closed" && k.date >= monStr && k.date <= friStr;
+    const mWeekRecs = supportKPIState.filter(k => {
+      return k.member === m && k.date >= monStr && k.date <= friStr;
     });
 
-    const totalClosed = weekClosedRecs.reduce((a, b) => a + Number(b.value), 0);
-    const daysLogged = new Set(weekClosedRecs.map(k => k.date)).size || 1;
+    const totalClosed = mWeekRecs.reduce((a, b) => a + getEntryMetric(b, "Closed"), 0);
+    const daysLogged = new Set(mWeekRecs.filter(k => getEntryTotal(k) > 0).map(k => k.date)).size || 1;
     const avgVal = (totalClosed / daysLogged);
     const avgStr = avgVal.toFixed(1);
 
@@ -1348,11 +1660,11 @@ function renderKPINumbers() {
       </thead>
       <tbody>
         ${members.map(m => {
-          const weekClosedRecs = supportKPIState.filter(k => {
-            return k.member === m && k.metric === "Closed" && k.date >= monStr && k.date <= friStr;
+          const mWeekRecs = supportKPIState.filter(k => {
+            return k.member === m && k.date >= monStr && k.date <= friStr;
           });
-          const totalClosed = weekClosedRecs.reduce((a, b) => a + Number(b.value), 0);
-          const daysLogged = new Set(weekClosedRecs.map(k => k.date)).size || 1;
+          const totalClosed = mWeekRecs.reduce((a, b) => a + getEntryMetric(b, "Closed"), 0);
+          const daysLogged = new Set(mWeekRecs.filter(k => getEntryTotal(k) > 0).map(k => k.date)).size || 1;
           const avgVal = (totalClosed / daysLogged);
           const avgStr = avgVal.toFixed(1);
           const status = avgVal >= 10 ? 'Above Target' : (avgVal >= 9 ? 'Near Target' : 'Below Target');
@@ -1419,65 +1731,282 @@ function initKPIAdmin() {
   }
 }
 
+// Global Failproof KPI Parser Handlers
+let isKPIParsing = false;
+
+window.handleClearKPIParser = function() {
+  const textInput = document.getElementById("parser-text");
+  const feedbackBox = document.getElementById("parser-feedback-box");
+  if (textInput) textInput.value = "";
+  if (feedbackBox) feedbackBox.style.display = "none";
+};
+
+window.handleParseAndSaveKPI = function() {
+  if (isKPIParsing) return;
+  isKPIParsing = true;
+  setTimeout(() => { isKPIParsing = false; }, 300);
+
+  const textInput = document.getElementById("parser-text");
+  const memberSelect = document.getElementById("parser-member");
+  const dateInput = document.getElementById("parser-date");
+  const feedbackBox = document.getElementById("parser-feedback-box");
+  const feedbackTitle = document.getElementById("parser-feedback-title");
+  const feedbackDetails = document.getElementById("parser-feedback-details");
+
+  if (!textInput) return;
+
+  const rawText = textInput.value.trim();
+  if (!rawText) {
+    const msg = "Please paste email or update text into the box above before clicking Parse & Save!";
+    alert(msg);
+    if (feedbackBox) {
+      feedbackBox.style.display = "block";
+      feedbackBox.style.background = "#fef2f2";
+      feedbackBox.style.borderColor = "#fca5a5";
+      feedbackBox.style.color = "#991b1b";
+      feedbackTitle.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color:#dc2626;"></i> <span>Input Text Missing</span>`;
+      feedbackDetails.textContent = msg;
+    }
+    return;
+  }
+
+  // 1. Team Member selection: Strictly use dropdown selection
+  const member = memberSelect ? memberSelect.value : "Christie";
+
+  // 2. Date selection: Strictly use the date picker value, normalized to YYYY-MM-DD
+  let date = dateInput && dateInput.value ? dateInput.value.trim() : "";
+  if (!date) {
+    // Check if text has a date if the date input is completely blank
+    const dateIsoMatch = rawText.match(/\b(20\d{2})[-\/](\d{1,2})[-\/](\d{1,2})\b/);
+    if (dateIsoMatch) {
+      const yStr = dateIsoMatch[1];
+      const mStr = dateIsoMatch[2].padStart(2, '0');
+      const dStr = dateIsoMatch[3].padStart(2, '0');
+      date = `${yStr}-${mStr}-${dStr}`;
+    } else {
+      const dateUsMatch = rawText.match(/\b(\d{1,2})[\/-](\d{1,2})[\/-](20\d{2})\b/);
+      if (dateUsMatch) {
+        const mStr = dateUsMatch[1].padStart(2, '0');
+        const dStr = dateUsMatch[2].padStart(2, '0');
+        const yStr = dateUsMatch[3];
+        date = `${yStr}-${mStr}-${dStr}`;
+      } else {
+        date = formatLocalIsoDate(new Date());
+      }
+    }
+    if (dateInput) dateInput.value = date;
+  } else {
+    // Normalize date format in case of single digits
+    const parts = date.split("-");
+    if (parts.length === 3) {
+      date = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    }
+  }
+
+  // 3. Robust Multi-Format Metric Patterns
+  const metricDefinitions = [
+    {
+      name: "Waiting on Contact",
+      regexes: [
+        /(?:Waiting\s*on\s*Contact|Waiting\s*Contact|Waiting\s*for\s*Contact|Pending\s*Contact|WOC)\s*[:=\-\(\s]*(\d+)/i,
+        /(\d+)\s*[\:\-\=\s]+\s*(?:Waiting\s*on\s*Contact|Waiting\s*Contact|Waiting\s*for\s*Contact|Pending\s*Contact|WOC)\b/i
+      ]
+    },
+    {
+      name: "Waiting on Us",
+      regexes: [
+        /(?:Waiting\s*on\s*Us|Waiting\s*Us|Waiting\s*for\s*Us|Pending\s*Internal|Our\s*Wait|WOU)\s*[:=\-\(\s]*(\d+)/i,
+        /(\d+)\s*[\:\-\=\s]+\s*(?:Waiting\s*on\s*Us|Waiting\s*Us|Waiting\s*for\s*Us|Pending\s*Internal|Our\s*Wait|WOU)\b/i
+      ]
+    },
+    {
+      name: "Dev Review",
+      regexes: [
+        /(?:Dev\s*Review(?:ing)?|In\s*Dev\s*Review|Developer\s*Review|Dev\s*Pending)\s*[:=\-\(\s]*(\d+)/i,
+        /(\d+)\s*[\:\-\=\s]+\s*(?:Dev\s*Review(?:ing)?|In\s*Dev\s*Review|Developer\s*Review|Dev\s*Pending)\b/i
+      ]
+    },
+    {
+      name: "In Jira",
+      regexes: [
+        /(?:In\s*Jira|Jira\s*Tickets?|Jira\s*Escalations?|Jira\s*Tasks?|Jira)\s*[:=\-\(\s]*(\d+)/i,
+        /(\d+)\s*[\:\-\=\s]+\s*(?:In\s*Jira|Jira\s*Tickets?|Jira\s*Escalations?|Jira\s*Tasks?|Jira)\b/i
+      ]
+    },
+    {
+      name: "Closed",
+      regexes: [
+        /(?:Closed|Resolved|Completed|Close|Done)\s*[:=\-\(\s]*(\d+)/i,
+        /(\d+)\s*[\:\-\=\s]+\s*(?:Closed|Resolved|Completed|Close|Done)\b/i
+      ]
+    },
+    {
+      name: "Backlog Health/Activation",
+      regexes: [
+        /(?:Backlog\s*(?:Health(?:\/Activation)?)?|Activation(?:s)?|Backlog\s*Health)\s*[:=\-\(\s]*(\d+)/i,
+        /(\d+)\s*[\:\-\=\s]+\s*(?:Backlog\s*(?:Health(?:\/Activation)?)?|Activation(?:s)?|Backlog\s*Health)\b/i
+      ]
+    },
+    {
+      name: "Customer Response",
+      regexes: [
+        /(?:Customer\s*Response(?:s)?|Customer\s*Responded|Responded)\s*[:=\-\(\s]*(\d+)/i,
+        /(\d+)\s*[\:\-\=\s]+\s*(?:Customer\s*Response(?:s)?|Customer\s*Responded|Responded)\b/i
+      ]
+    },
+    {
+      name: "LHP Migrations",
+      regexes: [
+        /(?:LHP\s*Migrations?|Migrations?|LHP\s*Migration|Migration)\s*[:=\-\(\s]*(\d+)/i,
+        /(\d+)\s*[\:\-\=\s]+\s*(?:LHP\s*Migrations?|Migrations?|LHP\s*Migration|Migration)\b/i
+      ]
+    }
+  ];
+
+  const parsedMetrics = {
+    "Waiting on Contact": 0,
+    "Waiting on Us": 0,
+    "Dev Review": 0,
+    "In Jira": 0,
+    "Closed": 0,
+    "Backlog Health/Activation": 0,
+    "Customer Response": 0,
+    "LHP Migrations": 0
+  };
+
+  let foundAny = false;
+  const lines = rawText.split('\n');
+
+  metricDefinitions.forEach(mDef => {
+    let foundVal = null;
+    
+    // Check line by line first for max precision
+    for (const line of lines) {
+      const cleanLine = line.trim();
+      if (!cleanLine) continue;
+      for (const rx of mDef.regexes) {
+        const lMatch = cleanLine.match(rx);
+        if (lMatch && lMatch[1] !== undefined) {
+          foundVal = Number(lMatch[1]);
+          break;
+        }
+      }
+      if (foundVal !== null) break;
+    }
+
+    // Fallback to full raw text regex check if line by line didn't catch it
+    if (foundVal === null) {
+      for (const rx of mDef.regexes) {
+        const match = rawText.match(rx);
+        if (match && match[1] !== undefined) {
+          foundVal = Number(match[1]);
+          break;
+        }
+      }
+    }
+
+    if (foundVal !== null && !isNaN(foundVal)) {
+      parsedMetrics[mDef.name] = foundVal;
+      foundAny = true;
+    }
+  });
+
+  if (!foundAny) {
+    const errorMsg = "No matching KPI metrics found in text. Please format lines like 'Closed: 5', 'Waiting on Us: 2', or '5 - Dev Review'.";
+    alert(errorMsg);
+    if (feedbackBox) {
+      feedbackBox.style.display = "block";
+      feedbackBox.style.background = "#fef2f2";
+      feedbackBox.style.borderColor = "#fca5a5";
+      feedbackBox.style.color = "#991b1b";
+      feedbackTitle.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color:#dc2626;"></i> <span>No Metrics Recognized</span>`;
+      feedbackDetails.textContent = errorMsg;
+    }
+    return;
+  }
+
+  const total = Object.values(parsedMetrics).reduce((a, b) => a + b, 0);
+
+  // 4. Create or update the 1 unified KPI entry for this member and date
+  const existingIdx = supportKPIState.findIndex(k => k.date === date && k.member === member && (k.entry_type || 'Daily') === 'Daily');
+  let entryId = Date.now();
+
+  if (existingIdx !== -1) {
+    entryId = supportKPIState[existingIdx].id || entryId;
+    supportKPIState[existingIdx] = {
+      id: entryId,
+      date: date,
+      member: member,
+      entry_type: "Daily",
+      metrics: parsedMetrics,
+      total: total
+    };
+  } else {
+    const newEntry = {
+      id: entryId,
+      date: date,
+      member: member,
+      entry_type: "Daily",
+      metrics: parsedMetrics,
+      total: total
+    };
+    supportKPIState.unshift(newEntry);
+  }
+
+  // Sort supportKPIState newest first by date and id
+  supportKPIState.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || 0) - (a.id || 0));
+
+  // Submit directly to Server Disk API & Cloud Database (No LocalStorage)
+  saveKPIDatabase();
+
+  // 5. Update UI & re-render all relevant tabs
+  renderKPI();
+  if (typeof renderDailyKPIReport === "function") renderDailyKPIReport();
+  if (typeof renderKPITeamInfo === "function") renderKPITeamInfo();
+  if (typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
+  if (typeof renderKPIDbManager === "function") renderKPIDbManager();
+
+  // Also sync daily report date input so navigating to Daily tab immediately shows this entry
+  const dailyDateInput = document.getElementById("daily-report-date");
+  if (dailyDateInput) dailyDateInput.value = date;
+
+  // 6. Display visual feedback box
+  const summaryText = Object.entries(parsedMetrics)
+    .filter(([_, v]) => v > 0)
+    .map(([k, v]) => `<strong>${k}</strong>: ${v}`)
+    .join(", ");
+  
+  if (feedbackBox) {
+    feedbackBox.style.display = "block";
+    feedbackBox.style.background = "#ecfdf5";
+    feedbackBox.style.borderColor = "#6ee7b7";
+    feedbackBox.style.color = "#065f46";
+    feedbackTitle.innerHTML = `<i class="fa-solid fa-circle-check" style="color:#059669;"></i> <span>Successfully Saved Unified KPI Record!</span>`;
+    feedbackDetails.innerHTML = `Saved for <strong>${member}</strong> on <strong>${date}</strong> (Total Volume: ${total} tickets):<br><div style="margin-top: 6px; padding: 8px 12px; background: rgba(255,255,255,0.8); border-radius: 6px; font-family: monospace;">${summaryText || 'All metrics recorded as 0'}</div>`;
+  }
+
+  // Clear text input after successful save
+  textInput.value = "";
+};
+
 // Sub-Tab 2: Auto-Parser (Matches kpi.py text regex parsing)
 function initKPIParser() {
   const btnParse = document.getElementById("btn-parse-save");
   const btnClear = document.getElementById("btn-clear-parser");
-  const textInput = document.getElementById("parser-text");
 
-  if (!btnParse || !textInput) return;
-
-  if (btnClear) {
-    btnClear.addEventListener("click", () => textInput.value = "");
+  if (btnParse) {
+    btnParse.onclick = (e) => {
+      e.preventDefault();
+      window.handleParseAndSaveKPI();
+    };
   }
 
-  btnParse.addEventListener("click", () => {
-    const rawText = textInput.value.trim();
-    if (!rawText) {
-      alert("Please paste email or update text to parse!");
-      return;
-    }
-
-    const member = document.getElementById("parser-member").value;
-    const date = document.getElementById("parser-date").value || new Date().toISOString().split("T")[0];
-
-    const metricPatterns = [
-      { name: "Waiting on Contact", regex: /Waiting\s*on\s*Contact\s*[:=\-]?\s*(\d+)/i },
-      { name: "Waiting on Us", regex: /Waiting\s*on\s*Us\s*[:=\-]?\s*(\d+)/i },
-      { name: "Dev Review", regex: /Dev\s*Review\s*[:=\-]?\s*(\d+)/i },
-      { name: "In Jira", regex: /In\s*Jira\s*[:=\-]?\s*(\d+)/i },
-      { name: "Closed", regex: /Closed\s*[:=\-]?\s*(\d+)/i },
-      { name: "Backlog Health/Activation", regex: /Backlog\s*(?:Health\/Activation)?\s*[:=\-]?\s*(\d+)/i },
-      { name: "Customer Response", regex: /Customer\s*Response\s*[:=\-]?\s*(\d+)/i },
-      { name: "LHP Migrations", regex: /LHP\s*Migrations?\s*[:=\-]?\s*(\d+)/i }
-    ];
-
-    let parsedCount = 0;
-    metricPatterns.forEach(m => {
-      const match = rawText.match(m.regex);
-      if (match) {
-        const val = Number(match[1]) || 0;
-        supportKPIState.unshift({
-          id: supportKPIState.length + 1,
-          date: date,
-          member: member,
-          metric: m.name,
-          value: val,
-          entry_type: "Daily"
-        });
-        parsedCount++;
-      }
-    });
-
-    if (parsedCount > 0) {
-      saveTasksState();
-      renderKPI();
-      alert(`Successfully parsed and saved ${parsedCount} KPI metrics for ${member} on ${date}!`);
-      textInput.value = "";
-    } else {
-      alert("No matching metrics found in text. Please ensure lines use format e.g. 'Closed: 5' or 'Waiting on Us: 2'.");
-    }
-  });
+  if (btnClear) {
+    btnClear.onclick = (e) => {
+      e.preventDefault();
+      window.handleClearKPIParser();
+    };
+  }
 }
 
 // Sub-Tab 3: Daily Report Navigator
@@ -1490,23 +2019,25 @@ function initKPIDaily() {
   if (!dateInput) return;
 
   const shiftDay = (days) => {
-    const curr = new Date(dateInput.value || new Date());
+    const curr = parseLocalDate(dateInput.value || getLatestKPIDate());
     curr.setDate(curr.getDate() + days);
-    dateInput.value = curr.toISOString().split("T")[0];
+    dateInput.value = formatLocalIsoDate(curr);
     renderDailyKPIReport();
   };
 
-  if (btnPrev) btnPrev.addEventListener("click", () => shiftDay(-1));
-  if (btnNext) btnNext.addEventListener("click", () => shiftDay(1));
-  if (btnToday) btnToday.addEventListener("click", () => {
-    dateInput.value = new Date().toISOString().split("T")[0];
+  if (btnPrev) btnPrev.onclick = () => shiftDay(-1);
+  if (btnNext) btnNext.onclick = () => shiftDay(1);
+  if (btnToday) btnToday.onclick = () => {
+    dateInput.value = formatLocalIsoDate(new Date());
     renderDailyKPIReport();
-  });
-  dateInput.addEventListener("change", renderDailyKPIReport);
+  };
+  dateInput.onchange = renderDailyKPIReport;
+  dateInput.oninput = renderDailyKPIReport;
 }
 
 function renderDailyKPIReport() {
-  const dateStr = document.getElementById("daily-report-date")?.value || new Date().toISOString().split("T")[0];
+  const dateInput = document.getElementById("daily-report-date");
+  const dateStr = dateInput?.value || getLatestKPIDate();
   const summaryEl = document.getElementById("daily-text-summary");
   const visualsEl = document.getElementById("daily-visuals-container");
 
@@ -1515,10 +2046,21 @@ function renderDailyKPIReport() {
   const dayRecords = supportKPIState.filter(k => k.date === dateStr);
 
   if (dayRecords.length === 0) {
-    summaryEl.textContent = `No KPI entries logged for ${dateStr}. Use '+ Log Support KPI' or the Auto-Parser to record entries.`;
-    visualsEl.innerHTML = `<div style="color: var(--text-dim); font-size: 0.82rem; padding: 20px; text-align: center;">No visual charts available for selected date.</div>`;
+    summaryEl.textContent = `No KPI entries logged for ${dateStr}.\n\nUse '+ Log Support KPI' or the Auto-Parser to record entries for this date.`;
+    visualsEl.innerHTML = `<div style="color: var(--text-dim); font-size: 0.82rem; padding: 20px; text-align: center;">No visual charts available for ${dateStr}.</div>`;
     return;
   }
+
+  const metricTypes = [
+    "Waiting on Contact",
+    "Waiting on Us",
+    "Dev Review",
+    "In Jira",
+    "Closed",
+    "Backlog Health/Activation",
+    "Customer Response",
+    "LHP Migrations"
+  ];
 
   // Summary Text
   let text = `======================================\nDAILY KPI REPORT: ${dateStr}\n======================================\n\n`;
@@ -1527,17 +2069,21 @@ function renderDailyKPIReport() {
   membersOnDay.forEach(m => {
     text += `[ ${m.toUpperCase()} ]\n`;
     const mRecs = dayRecords.filter(r => r.member === m);
-    mRecs.forEach(r => {
-      text += `  • ${r.metric}: ${r.value}\n`;
+    metricTypes.forEach(met => {
+      const val = mRecs.reduce((acc, r) => acc + getEntryMetric(r, met), 0);
+      if (val > 0) {
+        text += `  • ${met.padEnd(26)}: ${val}\n`;
+      }
     });
-    text += `\n`;
+    const mTot = mRecs.reduce((acc, r) => acc + getEntryTotal(r), 0);
+    text += `  ➔ Total Touched Volume     : ${mTot} tickets\n\n`;
   });
   summaryEl.textContent = text;
 
   // Visuals
   const metricTotals = {};
-  dayRecords.forEach(r => {
-    metricTotals[r.metric] = (metricTotals[r.metric] || 0) + Number(r.value);
+  metricTypes.forEach(met => {
+    metricTotals[met] = dayRecords.reduce((acc, r) => acc + getEntryMetric(r, met), 0);
   });
 
   const maxVal = Math.max(...Object.values(metricTotals), 1);
@@ -1557,7 +2103,7 @@ function renderDailyKPIReport() {
   }).join("");
 }
 
-// Sub-Tab 4: Weekly Summary Navigator
+// Sub-Tab 4: Weekly Summary Navigator (Weekly Individual & Team Summary)
 function initKPIWeekly() {
   const btnPrev = document.getElementById("btn-weekly-prev");
   const btnNext = document.getElementById("btn-weekly-next");
@@ -1566,50 +2112,231 @@ function initKPIWeekly() {
   if (!dateInput) return;
 
   const shiftWeek = (days) => {
-    const curr = new Date(dateInput.value || new Date());
+    const curr = parseLocalDate(dateInput.value || getLatestKPIDate());
     curr.setDate(curr.getDate() + days);
-    dateInput.value = curr.toISOString().split("T")[0];
+    dateInput.value = formatLocalIsoDate(curr);
     renderWeeklyKPISummary();
   };
 
-  if (btnPrev) btnPrev.addEventListener("click", () => shiftWeek(-7));
-  if (btnNext) btnNext.addEventListener("click", () => shiftWeek(7));
-  dateInput.addEventListener("change", renderWeeklyKPISummary);
+  if (btnPrev) btnPrev.onclick = () => shiftWeek(-7);
+  if (btnNext) btnNext.onclick = () => shiftWeek(7);
+  dateInput.onchange = renderWeeklyKPISummary;
+  dateInput.oninput = renderWeeklyKPISummary;
 }
 
 function renderWeeklyKPISummary() {
   const totalsEl = document.getElementById("weekly-totals-container");
   if (!totalsEl) return;
 
-  const recent700 = supportKPIState.slice(0, 700);
-  const members = [...new Set(recent700.map(r => r.member))];
-  const metrics = [...new Set(recent700.map(r => r.metric))];
+  const dateInput = document.getElementById("weekly-report-date");
+  const selDateStr = dateInput?.value || getLatestKPIDate();
+  const week = getWeekRange(selDateStr);
+  const weekRecords = supportKPIState.filter(k => k.date >= week.monStr && k.date <= week.sunStr);
 
-  let tableHtml = `
-    <table class="kpi-table" style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
-      <thead>
-        <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
-          <th style="padding: 8px 12px; text-align: left;">Member</th>
-  `;
+  if (weekRecords.length === 0) {
+    totalsEl.innerHTML = `
+      <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 28px 20px; text-align: center; color: var(--text-muted);">
+        <div style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">
+          📅 Week of ${week.monStr} to ${week.friStr} (Mon-Fri)
+        </div>
+        <p style="font-size: 0.84rem; margin-bottom: 14px; max-width: 480px; margin-left: auto; margin-right: auto;">
+          No KPI records found for this specific week. Use the <strong>Prev Week</strong> / <strong>Next Week</strong> buttons or pick a date from an active logging period.
+        </p>
+        <div style="display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('btn-weekly-prev').click()"><i class="fa-solid fa-chevron-left"></i> Prev Week</button>
+          <button type="button" class="btn btn-primary" onclick="if(document.getElementById('weekly-report-date')){ document.getElementById('weekly-report-date').value='${getLatestKPIDate()}'; renderWeeklyKPISummary(); }"><i class="fa-solid fa-calendar-check"></i> Go to Latest Data (${getLatestKPIDate()})</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
 
-  metrics.forEach(m => {
-    tableHtml += `<th style="padding: 8px 12px; text-align: center;">${m}</th>`;
+  const metricTypes = [
+    "Waiting on Contact",
+    "Waiting on Us",
+    "Dev Review",
+    "In Jira",
+    "Closed",
+    "Backlog Health/Activation",
+    "Customer Response",
+    "LHP Migrations"
+  ];
+
+  // Distinct members present in this week, ordered with standard ones first
+  const standardMembers = ["Christie", "Kevin", "Nishant"];
+  const otherMembers = [...new Set(weekRecords.map(r => r.member))].filter(m => !standardMembers.includes(m));
+  const activeMembers = [...standardMembers.filter(m => weekRecords.some(r => r.member === m)), ...otherMembers];
+  const membersToDisplay = activeMembers.length > 0 ? activeMembers : standardMembers;
+
+  // Compute column totals
+  const colTotals = {};
+  metricTypes.forEach(met => {
+    colTotals[met] = weekRecords.reduce((acc, r) => acc + getEntryMetric(r, met), 0);
   });
-  tableHtml += `<th style="padding: 8px 12px; text-align: center; font-weight: 800; background: #eff6ff;">Total</th></tr></thead><tbody>`;
+  const grandTotal = Object.values(colTotals).reduce((a, b) => a + b, 0);
+  const totalClosed = colTotals["Closed"] || 0;
+  const teamResRate = grandTotal > 0 ? ((totalClosed / grandTotal) * 100).toFixed(1) : "0.0";
 
-  members.forEach(mem => {
-    tableHtml += `<tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 8px 12px; font-weight: 700; color: var(--lhp-blue);">${mem}</td>`;
+  // Build Aggregation Table Rows HTML
+  let tableRows = "";
+  membersToDisplay.forEach(mem => {
+    const memRecs = weekRecords.filter(r => r.member === mem);
     let rowTotal = 0;
-    metrics.forEach(met => {
-      const sum = recent700.filter(r => r.member === mem && r.metric === met).reduce((a, b) => a + Number(b.value), 0);
+    let rowClosed = 0;
+    let metricCols = "";
+
+    metricTypes.forEach(met => {
+      const sum = memRecs.reduce((acc, r) => acc + getEntryMetric(r, met), 0);
       rowTotal += sum;
-      tableHtml += `<td style="padding: 8px 12px; text-align: center;">${sum}</td>`;
+      if (met === "Closed") rowClosed = sum;
+      metricCols += `<td style="padding: 8px 10px; text-align: center; ${sum > 0 ? 'font-weight: 700; color: var(--text-main);' : 'color: var(--text-dim);'}">${sum}</td>`;
     });
-    tableHtml += `<td style="padding: 8px 12px; text-align: center; font-weight: 800; color: var(--text-main); background: #f8fafc;">${rowTotal}</td></tr>`;
+
+    const resRate = rowTotal > 0 ? ((rowClosed / rowTotal) * 100).toFixed(1) : "0.0";
+    const daysLogged = new Set(memRecs.filter(r => getEntryTotal(r) > 0).map(r => r.date)).size || 1;
+    const avgDailyClosed = (rowClosed / daysLogged).toFixed(1);
+
+    tableRows += `
+      <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 8px 12px; font-weight: 700; color: var(--lhp-blue);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="mini-avatar" style="width: 22px; height: 22px; font-size: 0.65rem;">${mem.slice(0, 2).toUpperCase()}</div>
+            <span>${mem}</span>
+          </div>
+        </td>
+        ${metricCols}
+        <td style="padding: 8px 12px; text-align: center; font-weight: 800; color: var(--text-main); background: #f8fafc;">${rowTotal}</td>
+        <td style="padding: 8px 12px; text-align: center; font-weight: 700; color: ${Number(resRate) >= 65 ? '#059669' : '#d97706'}; background: #f0fdf4;">${resRate}%</td>
+        <td style="padding: 8px 12px; text-align: center; font-weight: 600; color: var(--text-muted);">${avgDailyClosed}</td>
+      </tr>
+    `;
   });
 
-  tableHtml += `</tbody></table>`;
-  totalsEl.innerHTML = tableHtml;
+  const footerCols = metricTypes.map(met => `<th style="padding: 8px 10px; text-align: center; font-weight: 800;">${colTotals[met] || 0}</th>`).join("");
+
+  // Individual Member Visual Progress & Breakdown Cards
+  let memberCardsHtml = "";
+  membersToDisplay.forEach(mem => {
+    const memRecs = weekRecords.filter(r => r.member === mem);
+    const mTot = memRecs.reduce((acc, r) => acc + getEntryTotal(r), 0);
+    const mClosed = memRecs.reduce((acc, r) => acc + getEntryMetric(r, "Closed"), 0);
+    const mBottleneck = memRecs.reduce((acc, r) => acc + getEntryBottleneck(r), 0);
+    const mResPct = mTot > 0 ? ((mClosed / mTot) * 100).toFixed(1) : "0.0";
+    const daysLogged = new Set(memRecs.filter(r => getEntryTotal(r) > 0).map(r => r.date)).size || 1;
+
+    // Per-metric progress lines
+    const metricLines = metricTypes.map(met => {
+      const val = memRecs.reduce((acc, r) => acc + getEntryMetric(r, met), 0);
+      if (val === 0) return "";
+      const pct = mTot > 0 ? Math.round((val / mTot) * 100) : 0;
+      let barColor = "var(--lhp-blue)";
+      if (met === "Closed") barColor = "#10b981";
+      else if (["Waiting on Us", "Dev Review", "In Jira"].includes(met)) barColor = "#f59e0b";
+      else if (met === "Backlog Health/Activation") barColor = "#ec4899";
+
+      return `
+        <div class="analytics-bar-item" style="margin-bottom: 6px;">
+          <div class="analytics-bar-label" style="font-size: 0.72rem;">
+            <span>${met}</span>
+            <strong>${val} (${pct}%)</strong>
+          </div>
+          <div class="analytics-progress-bg" style="height: 6px;">
+            <div class="analytics-progress-fill" style="width: ${pct}%; background: ${barColor};"></div>
+          </div>
+        </div>
+      `;
+    }).filter(Boolean).join("");
+
+    memberCardsHtml += `
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="mini-avatar">${mem.slice(0, 2).toUpperCase()}</div>
+            <div>
+              <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">${mem}</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">${daysLogged} active logging days</div>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 1.1rem; font-weight: 800; color: #047857;">${mResPct}%</div>
+            <div style="font-size: 0.68rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Resolution</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px;">
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px; padding: 6px 8px; text-align: center;">
+            <div style="font-size: 0.65rem; color: #166534; font-weight: 700; text-transform: uppercase;">Closed</div>
+            <div style="font-size: 1.05rem; font-weight: 800; color: #14532d;">${mClosed}</div>
+          </div>
+          <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px; padding: 6px 8px; text-align: center;">
+            <div style="font-size: 0.65rem; color: #92400e; font-weight: 700; text-transform: uppercase;">Bottleneck</div>
+            <div style="font-size: 1.05rem; font-weight: 800; color: #78350f;">${mBottleneck}</div>
+          </div>
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 6px 8px; text-align: center;">
+            <div style="font-size: 0.65rem; color: #1e40af; font-weight: 700; text-transform: uppercase;">Total Touched</div>
+            <div style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a;">${mTot}</div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Metric Breakdown</div>
+          ${metricLines || '<div style="font-size: 0.75rem; color: var(--text-dim);">No metric breakdown available.</div>'}
+        </div>
+      </div>
+    `;
+  });
+
+  totalsEl.innerHTML = `
+    <!-- Active Week Status Banner -->
+    <div style="display: flex; justify-content: space-between; align-items: center; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 700; color: #1e40af;">
+        <i class="fa-solid fa-calendar-check" style="color: var(--lhp-blue);"></i>
+        <span>Active Week: Mon, ${week.monStr} – Fri, ${week.friStr}</span>
+      </div>
+      <div style="display: flex; gap: 12px; font-size: 0.78rem; color: #1e3a8a; flex-wrap: wrap;">
+        <span><strong>${weekRecords.length}</strong> active submission logs</span>
+        <span>•</span>
+        <span><strong>${grandTotal}</strong> total tickets touched</span>
+        <span>•</span>
+        <span><strong>${totalClosed}</strong> closed (${teamResRate}%)</span>
+      </div>
+    </div>
+
+    <!-- Weekly Matrix Table -->
+    <div class="kpi-table-wrapper" style="overflow-x: auto; margin-bottom: 20px;">
+      <table class="kpi-table" style="width: 100%; border-collapse: collapse; font-size: 0.76rem;">
+        <thead>
+          <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
+            <th style="padding: 10px 12px; text-align: left; min-width: 130px;">Team Member</th>
+            ${metricTypes.map(m => `<th style="padding: 10px 8px; text-align: center; font-size: 0.72rem;">${m}</th>`).join("")}
+            <th style="padding: 10px 10px; text-align: center; font-weight: 800; background: #eff6ff;">Week Total</th>
+            <th style="padding: 10px 10px; text-align: center; font-weight: 800; background: #f0fdf4;">Resolution %</th>
+            <th style="padding: 10px 10px; text-align: center; font-weight: 700;">Avg Closed/Day</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+        <tfoot>
+          <tr style="background: #f1f5f9; border-top: 2px solid #cbd5e1; font-weight: 800;">
+            <td style="padding: 10px 12px; color: var(--text-main);">TEAM TOTAL</td>
+            ${footerCols}
+            <td style="padding: 10px 10px; text-align: center; font-weight: 900; background: #dbeafe; color: #1e40af;">${grandTotal}</td>
+            <td style="padding: 10px 10px; text-align: center; font-weight: 900; background: #dcfce7; color: #166534;">${teamResRate}%</td>
+            <td style="padding: 10px 10px; text-align: center; color: var(--text-muted);">-</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Individual Member Charts Section -->
+    <h4 style="font-size: 0.88rem; font-weight: 700; margin-bottom: 12px; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+      <i class="fa-solid fa-users" style="color: var(--lhp-blue);"></i> Individual Member Workload Charts (${week.monStr} to ${week.friStr})
+    </h4>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+      ${memberCardsHtml}
+    </div>
+  `;
 }
 
 // Sub-Tab 5: Multi-Week Trend Analytics (Rep User Trends)
@@ -1617,8 +2344,12 @@ function initKPITrends() {
   const repSelect = document.getElementById("trend-rep-select");
   const winSelect = document.getElementById("trend-window-select");
 
-  if (repSelect) repSelect.addEventListener("change", renderKPITrends);
-  if (winSelect) winSelect.addEventListener("change", renderKPITrends);
+  if (repSelect) {
+    repSelect.onchange = renderKPITrends;
+  }
+  if (winSelect) {
+    winSelect.onchange = renderKPITrends;
+  }
 }
 
 function renderKPITrends() {
@@ -1633,10 +2364,19 @@ function renderKPITrends() {
     filtered = filtered.filter(k => k.member === selectedRep);
   }
 
+  if (windowStr !== "all") {
+    const numWeeks = parseInt(windowStr, 10) || 8;
+    const latestDate = parseLocalDate(getLatestKPIDate());
+    const cutoff = new Date(latestDate);
+    cutoff.setDate(cutoff.getDate() - (numWeeks * 7));
+    const cutoffStr = formatLocalIsoDate(cutoff);
+    filtered = filtered.filter(k => k.date >= cutoffStr);
+  }
+
   // Workload Categories matching kpi.py: Resolved, Backlog, Bottleneck
-  const resolvedVal = filtered.filter(k => k.metric === "Closed").reduce((a, b) => a + Number(b.value), 0);
-  const backlogVal = filtered.filter(k => ["Waiting on Contact", "Backlog Health/Activation", "Customer Response"].includes(k.metric)).reduce((a, b) => a + Number(b.value), 0);
-  const bottleneckVal = filtered.filter(k => ["Waiting on Us", "Dev Review", "In Jira"].includes(k.metric)).reduce((a, b) => a + Number(b.value), 0);
+  const resolvedVal = filtered.reduce((acc, k) => acc + getEntryMetric(k, "Closed"), 0);
+  const backlogVal = filtered.reduce((acc, k) => acc + getEntryMetric(k, "Waiting on Contact") + getEntryMetric(k, "Backlog Health/Activation") + getEntryMetric(k, "Customer Response"), 0);
+  const bottleneckVal = filtered.reduce((acc, k) => acc + getEntryBottleneck(k), 0);
   const totalVal = resolvedVal + backlogVal + bottleneckVal || 1;
 
   const resPct = Math.round((resolvedVal / totalVal) * 100);
@@ -1688,7 +2428,9 @@ function renderKPITrends() {
 // Sub-Tab 6: AI Performance Insights
 function initKPIPerformance() {
   const select = document.getElementById("perf-member-select");
-  if (select) select.addEventListener("change", renderKPIPerformance);
+  if (select) {
+    select.onchange = renderKPIPerformance;
+  }
 }
 
 function renderKPIPerformance() {
@@ -1700,9 +2442,9 @@ function renderKPIPerformance() {
   const memberFilter = document.getElementById("perf-member-select")?.value || "all";
   const records = memberFilter === "all" ? supportKPIState : supportKPIState.filter(k => k.member === memberFilter);
 
-  const closedCount = records.filter(r => r.metric === "Closed").reduce((a, b) => a + Number(b.value), 0);
-  const waitingContact = records.filter(r => r.metric === "Waiting on Contact").reduce((a, b) => a + Number(b.value), 0);
-  const waitingUs = records.filter(r => r.metric === "Waiting on Us").reduce((a, b) => a + Number(b.value), 0);
+  const closedCount = records.reduce((acc, r) => acc + getEntryMetric(r, "Closed"), 0);
+  const waitingContact = records.reduce((acc, r) => acc + getEntryMetric(r, "Waiting on Contact"), 0);
+  const waitingUs = records.reduce((acc, r) => acc + getEntryMetric(r, "Waiting on Us"), 0);
 
   const grade = closedCount > 100 ? "A+ (Excellent Throughput)" : (closedCount > 40 ? "A (High Performance)" : "B+ (Steady)");
 
@@ -1736,7 +2478,112 @@ function renderKPIPerformance() {
   `;
 }
 
-// Sub-Tab 7: Manage Database
+// Sub-Tab 7: Manage Database & Edit KPI Submissions
+function openEditKPIModal(record) {
+  const modal = document.getElementById("kpi-edit-modal");
+  if (!modal || !record) return;
+
+  document.getElementById("kpi-edit-id").value = record.id || "";
+  document.getElementById("kpi-edit-member").value = record.member || "Christie";
+  document.getElementById("kpi-edit-date").value = record.date || formatLocalIsoDate(new Date());
+  document.getElementById("kpi-edit-type").value = record.entry_type || "Daily";
+
+  document.getElementById("kpi-edit-closed").value = getEntryMetric(record, "Closed");
+  document.getElementById("kpi-edit-woc").value = getEntryMetric(record, "Waiting on Contact");
+  document.getElementById("kpi-edit-wou").value = getEntryMetric(record, "Waiting on Us");
+  document.getElementById("kpi-edit-dev").value = getEntryMetric(record, "Dev Review");
+  document.getElementById("kpi-edit-jira").value = getEntryMetric(record, "In Jira");
+  document.getElementById("kpi-edit-backlog").value = getEntryMetric(record, "Backlog Health/Activation");
+  document.getElementById("kpi-edit-customer").value = getEntryMetric(record, "Customer Response");
+  document.getElementById("kpi-edit-migrations").value = getEntryMetric(record, "LHP Migrations");
+
+  updateEditModalTotal();
+  modal.classList.add("active");
+}
+
+function updateEditModalTotal() {
+  const closed = Number(document.getElementById("kpi-edit-closed")?.value) || 0;
+  const woc = Number(document.getElementById("kpi-edit-woc")?.value) || 0;
+  const wou = Number(document.getElementById("kpi-edit-wou")?.value) || 0;
+  const dev = Number(document.getElementById("kpi-edit-dev")?.value) || 0;
+  const jira = Number(document.getElementById("kpi-edit-jira")?.value) || 0;
+  const backlog = Number(document.getElementById("kpi-edit-backlog")?.value) || 0;
+  const cust = Number(document.getElementById("kpi-edit-customer")?.value) || 0;
+  const mig = Number(document.getElementById("kpi-edit-migrations")?.value) || 0;
+
+  const total = closed + woc + wou + dev + jira + backlog + cust + mig;
+  const totalEl = document.getElementById("kpi-edit-calculated-total");
+  if (totalEl) totalEl.textContent = `${total} tickets`;
+}
+
+function initKPIEditModal() {
+  const modal = document.getElementById("kpi-edit-modal");
+  const btnClose = document.getElementById("btn-close-kpi-edit-modal");
+  const btnCancel = document.getElementById("btn-cancel-kpi-edit-modal");
+  const form = document.getElementById("kpi-edit-form");
+
+  if (!modal || !form) return;
+
+  const closeModal = () => modal.classList.remove("active");
+
+  if (btnClose) btnClose.onclick = closeModal;
+  if (btnCancel) btnCancel.onclick = closeModal;
+
+  // Live total calculation on inputs
+  const inputs = [
+    "kpi-edit-closed", "kpi-edit-woc", "kpi-edit-wou", "kpi-edit-dev",
+    "kpi-edit-jira", "kpi-edit-backlog", "kpi-edit-customer", "kpi-edit-migrations"
+  ];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", updateEditModalTotal);
+  });
+
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    const entryId = document.getElementById("kpi-edit-id").value;
+    const record = supportKPIState.find(k => String(k.id) === String(entryId));
+    if (!record) {
+      alert("Could not find KPI record to update.");
+      return;
+    }
+
+    const updatedMetrics = {
+      "Waiting on Contact": Number(document.getElementById("kpi-edit-woc").value) || 0,
+      "Waiting on Us": Number(document.getElementById("kpi-edit-wou").value) || 0,
+      "Dev Review": Number(document.getElementById("kpi-edit-dev").value) || 0,
+      "In Jira": Number(document.getElementById("kpi-edit-jira").value) || 0,
+      "Closed": Number(document.getElementById("kpi-edit-closed").value) || 0,
+      "Backlog Health/Activation": Number(document.getElementById("kpi-edit-backlog").value) || 0,
+      "Customer Response": Number(document.getElementById("kpi-edit-customer").value) || 0,
+      "LHP Migrations": Number(document.getElementById("kpi-edit-migrations").value) || 0
+    };
+    const updatedTotal = Object.values(updatedMetrics).reduce((a, b) => a + b, 0);
+
+    record.member = document.getElementById("kpi-edit-member").value;
+    record.date = document.getElementById("kpi-edit-date").value;
+    record.entry_type = document.getElementById("kpi-edit-type").value || "Daily";
+    record.metrics = updatedMetrics;
+    record.total = updatedTotal;
+
+    // Sort newest first
+    supportKPIState.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || 0) - (a.id || 0));
+
+    saveKPIDatabase();
+    renderKPI();
+    renderKPIDbManager();
+    if (typeof renderDailyKPIReport === "function") renderDailyKPIReport();
+    if (typeof renderKPITeamInfo === "function") renderKPITeamInfo();
+    if (typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
+    if (typeof renderKPITrends === "function") renderKPITrends();
+    if (typeof renderKPIPerformance === "function") renderKPIPerformance();
+    if (typeof renderKPIGrade === "function") renderKPIGrade();
+    if (typeof renderKPINumbers === "function") renderKPINumbers();
+
+    closeModal();
+  };
+}
+
 function initKPIManage() {
   const searchInput = document.getElementById("kpi-db-search");
   const memberSelect = document.getElementById("kpi-db-filter-member");
@@ -1751,46 +2598,110 @@ function renderKPIDbManager() {
   const bodyEl = document.getElementById("kpi-db-full-body");
   if (!bodyEl) return;
 
-  const query = document.getElementById("kpi-db-search")?.value.toLowerCase() || "";
+  const query = document.getElementById("kpi-db-search")?.value.toLowerCase().trim() || "";
   const memberFilter = document.getElementById("kpi-db-filter-member")?.value || "all";
 
   const filtered = supportKPIState.filter(k => {
-    const matchesQ = (k.member && k.member.toLowerCase().includes(query)) ||
-                     (k.metric && k.metric.toLowerCase().includes(query)) ||
-                     (k.date && k.date.toLowerCase().includes(query));
-    const matchesM = memberFilter === "all" || k.member === memberFilter;
-    return matchesQ && matchesM;
+    const memMatch = memberFilter === "all" || k.member === memberFilter;
+    if (!memMatch) return false;
+
+    if (!query) return true;
+
+    const matchesM = k.member && k.member.toLowerCase().includes(query);
+    const matchesD = k.date && k.date.toLowerCase().includes(query);
+    const matchesT = k.entry_type && k.entry_type.toLowerCase().includes(query);
+    let matchesMetrics = false;
+    if (k.metrics) {
+      matchesMetrics = Object.keys(k.metrics).some(mKey => mKey.toLowerCase().includes(query));
+    } else if (k.metric) {
+      matchesMetrics = k.metric.toLowerCase().includes(query);
+    }
+    return matchesM || matchesD || matchesT || matchesMetrics;
   });
 
   const sliced = filtered.slice(0, 50);
 
-  bodyEl.innerHTML = sliced.map(r => `
-    <tr style="border-bottom: 1px solid #f1f5f9;">
-      <td style="padding: 8px 12px; font-weight: 700; color: var(--text-dim);">#${r.id || '-'}</td>
-      <td style="padding: 8px 12px;">${r.date || '-'}</td>
-      <td style="padding: 8px 12px; font-weight: 600; color: var(--lhp-blue);">${r.member || '-'}</td>
-      <td style="padding: 8px 12px;"><span class="category-tag smartapp1003" style="font-size: 0.65rem;">${r.metric || '-'}</span></td>
-      <td style="padding: 8px 12px; font-weight: 700; color: var(--text-main);">${r.value}</td>
-      <td style="padding: 8px 12px;"><span class="priority-pill priority-medium">${r.entry_type || 'Daily'}</span></td>
-      <td style="padding: 8px 12px;">
-        <button class="btn-delete-kpi-entry" data-id="${r.id}" style="background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;">
-          <i class="fa-solid fa-trash-can"></i> Delete
-        </button>
-      </td>
-    </tr>
-  `).join("");
+  if (sliced.length === 0) {
+    bodyEl.innerHTML = `<tr><td colspan="9" style="padding: 24px; text-align: center; color: var(--text-dim);">No KPI records match the current search / filter.</td></tr>`;
+    return;
+  }
+
+  bodyEl.innerHTML = sliced.map(r => {
+    const closed = getEntryMetric(r, "Closed");
+    const bottleneck = getEntryBottleneck(r);
+    const total = getEntryTotal(r);
+    
+    // Build pills for non-zero metrics
+    let breakdownPills = "";
+    if (r.metrics) {
+      breakdownPills = Object.entries(r.metrics)
+        .filter(([_, v]) => Number(v) > 0)
+        .map(([k, v]) => `<span style="display: inline-block; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; margin: 2px; font-size: 0.7rem;"><strong>${k}</strong>: ${v}</span>`)
+        .join("");
+    } else {
+      breakdownPills = `<span style="display: inline-block; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem;"><strong>${r.metric}</strong>: ${r.value}</span>`;
+    }
+
+    return `
+      <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 8px 12px; font-weight: 700; color: var(--text-dim);">#${r.id || '-'}</td>
+        <td style="padding: 8px 12px; font-weight: 600;">${r.date || '-'}</td>
+        <td style="padding: 8px 12px; font-weight: 700; color: var(--lhp-blue);">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <div class="mini-avatar" style="width: 22px; height: 22px; font-size: 0.65rem;">${(r.member || '??').slice(0, 2).toUpperCase()}</div>
+            <span>${r.member || '-'}</span>
+          </div>
+        </td>
+        <td style="padding: 8px 12px; text-align: center;"><span class="priority-pill priority-medium">${r.entry_type || 'Daily'}</span></td>
+        <td style="padding: 8px 12px; text-align: center; font-weight: 800; color: #10b981; background: #f0fdf4;">${closed}</td>
+        <td style="padding: 8px 12px; text-align: center; font-weight: 800; color: ${bottleneck > 0 ? '#b45309' : 'var(--text-dim)'}; background: ${bottleneck > 0 ? '#fffbeb' : 'transparent'};">${bottleneck}</td>
+        <td style="padding: 8px 12px; text-align: center; font-weight: 800; color: var(--text-main); background: #f8fafc;">${total}</td>
+        <td style="padding: 8px 12px; max-width: 320px;">${breakdownPills || '<span style="color:var(--text-dim);">All 0</span>'}</td>
+        <td style="padding: 8px 12px; text-align: center; white-space: nowrap;">
+          <div style="display: inline-flex; gap: 6px;">
+            <button class="btn-edit-kpi-entry" data-id="${r.id}" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.72rem; font-weight: 600;">
+              <i class="fa-solid fa-pen-to-square"></i> Edit
+            </button>
+            <button class="btn-delete-kpi-entry" data-id="${r.id}" style="background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.72rem; font-weight: 600;">
+              <i class="fa-solid fa-trash-can"></i> Delete
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  // Attach edit handlers
+  bodyEl.querySelectorAll(".btn-edit-kpi-entry").forEach(btn => {
+    btn.onclick = () => {
+      const entryId = btn.dataset.id;
+      const targetRecord = supportKPIState.find(k => String(k.id) === String(entryId));
+      if (targetRecord) {
+        openEditKPIModal(targetRecord);
+      }
+    };
+  });
 
   // Attach delete handlers
   bodyEl.querySelectorAll(".btn-delete-kpi-entry").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const entryId = Number(btn.dataset.id);
-      if (confirm(`Are you sure you want to delete KPI record #${entryId}?`)) {
-        supportKPIState = supportKPIState.filter(k => k.id !== entryId);
-        saveTasksState();
+    btn.onclick = () => {
+      const entryId = btn.dataset.id;
+      const targetRecord = supportKPIState.find(k => String(k.id) === String(entryId));
+      const recordLabel = targetRecord ? `${targetRecord.member} on ${targetRecord.date} (Total: ${getEntryTotal(targetRecord)} tickets)` : `Record #${entryId}`;
+      if (confirm(`Are you sure you want to delete the KPI submission for ${recordLabel}?`)) {
+        supportKPIState = supportKPIState.filter(k => String(k.id) !== String(entryId));
+        saveKPIDatabase();
         renderKPI();
         renderKPIDbManager();
+        if (typeof renderDailyKPIReport === "function") renderDailyKPIReport();
+        if (typeof renderKPITeamInfo === "function") renderKPITeamInfo();
+        if (typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
+        if (typeof renderKPITrends === "function") renderKPITrends();
+        if (typeof renderKPIPerformance === "function") renderKPIPerformance();
+        if (typeof renderKPIGrade === "function") renderKPIGrade();
+        if (typeof renderKPINumbers === "function") renderKPINumbers();
       }
-    });
+    };
   });
 }
 
