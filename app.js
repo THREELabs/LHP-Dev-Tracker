@@ -226,18 +226,31 @@ async function loadSupportKPIData() {
     console.warn("Could not load kpi database from server API", err);
   }
 
+  if (!supportKPIState || supportKPIState.length === 0) {
+    try {
+      const backupRes = await fetch("support_kpis_backup_2026-08-31.json");
+      if (backupRes.ok) {
+        const backupData = await backupRes.json();
+        if (Array.isArray(backupData) && backupData.length > 0) {
+          supportKPIState = backupData;
+          saveKPIToLocalStorage();
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load backup KPI data", e);
+    }
+  }
+
   // Populate default dates if unset
   const latestDate = typeof getLatestKPIDate === "function" ? getLatestKPIDate() : formatLocalIsoDate(new Date());
   const dailyDate = document.getElementById("daily-report-date");
   const weeklyDate = document.getElementById("weekly-report-date");
   const teamInfoDate = document.getElementById("team-info-date");
-  const gradeDate = document.getElementById("grade-date-input");
   const numbersDate = document.getElementById("numbers-report-date");
 
   if (dailyDate && !dailyDate.value) dailyDate.value = latestDate;
   if (weeklyDate && !weeklyDate.value) weeklyDate.value = latestDate;
   if (teamInfoDate && !teamInfoDate.value) teamInfoDate.value = latestDate;
-  if (gradeDate && !gradeDate.value) gradeDate.value = latestDate;
   if (numbersDate && !numbersDate.value) numbersDate.value = latestDate;
 
   renderKPI();
@@ -251,7 +264,6 @@ async function loadSupportKPIData() {
     if (activeSubtab.id === "kpi-subtab-weekly" && typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
     if (activeSubtab.id === "kpi-subtab-trends" && typeof renderKPITrends === "function") renderKPITrends();
     if (activeSubtab.id === "kpi-subtab-performance" && typeof renderKPIPerformance === "function") renderKPIPerformance();
-    if (activeSubtab.id === "kpi-subtab-grade" && typeof renderKPIGrade === "function") renderKPIGrade();
     if (activeSubtab.id === "kpi-subtab-numbers" && typeof renderKPINumbers === "function") renderKPINumbers();
     if (activeSubtab.id === "kpi-subtab-manage" && typeof renderKPIDbManager === "function") renderKPIDbManager();
   }
@@ -397,7 +409,6 @@ function initNavigation() {
           if (activeSubtab.id === "kpi-subtab-weekly" && typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
           if (activeSubtab.id === "kpi-subtab-trends" && typeof renderKPITrends === "function") renderKPITrends();
           if (activeSubtab.id === "kpi-subtab-performance" && typeof renderKPIPerformance === "function") renderKPIPerformance();
-          if (activeSubtab.id === "kpi-subtab-grade" && typeof renderKPIGrade === "function") renderKPIGrade();
           if (activeSubtab.id === "kpi-subtab-numbers" && typeof renderKPINumbers === "function") renderKPINumbers();
           if (activeSubtab.id === "kpi-subtab-manage" && typeof renderKPIDbManager === "function") renderKPIDbManager();
         }
@@ -452,7 +463,6 @@ function initDashboardHub() {
           if (activeSubtab.id === "kpi-subtab-weekly" && typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
           if (activeSubtab.id === "kpi-subtab-trends" && typeof renderKPITrends === "function") renderKPITrends();
           if (activeSubtab.id === "kpi-subtab-performance" && typeof renderKPIPerformance === "function") renderKPIPerformance();
-          if (activeSubtab.id === "kpi-subtab-grade" && typeof renderKPIGrade === "function") renderKPIGrade();
           if (activeSubtab.id === "kpi-subtab-numbers" && typeof renderKPINumbers === "function") renderKPINumbers();
           if (activeSubtab.id === "kpi-subtab-manage" && typeof renderKPIDbManager === "function") renderKPIDbManager();
         }
@@ -1308,7 +1318,6 @@ window.switchKPISubtab = function(item) {
   if (targetSubtab === "kpi-subtab-weekly") renderWeeklyKPISummary();
   if (targetSubtab === "kpi-subtab-trends") renderKPITrends();
   if (targetSubtab === "kpi-subtab-performance") renderKPIPerformance();
-  if (targetSubtab === "kpi-subtab-grade") renderKPIGrade();
   if (targetSubtab === "kpi-subtab-numbers") renderKPINumbers();
   if (targetSubtab === "kpi-subtab-manage") renderKPIDbManager();
 };
@@ -1327,14 +1336,12 @@ function initKPISubnav() {
   const dailyDate = document.getElementById("daily-report-date");
   const weeklyDate = document.getElementById("weekly-report-date");
   const teamInfoDate = document.getElementById("team-info-date");
-  const gradeDate = document.getElementById("grade-date-input");
   const numbersDate = document.getElementById("numbers-report-date");
 
   if (parserDate && !parserDate.value) parserDate.value = formatLocalIsoDate(new Date());
   if (dailyDate && !dailyDate.value) dailyDate.value = defaultDateStr;
   if (weeklyDate && !weeklyDate.value) weeklyDate.value = defaultDateStr;
   if (teamInfoDate && !teamInfoDate.value) teamInfoDate.value = defaultDateStr;
-  if (gradeDate && !gradeDate.value) gradeDate.value = defaultDateStr;
   if (numbersDate && !numbersDate.value) numbersDate.value = defaultDateStr;
 }
 
@@ -1348,7 +1355,6 @@ function initKPI() {
   initKPIWeekly();
   initKPITrends();
   initKPIPerformance();
-  initKPIGrade();
   initKPINumbers();
   initKPIManage();
   initKPIAdmin();
@@ -1430,146 +1436,7 @@ function renderKPITeamInfo() {
   }).join("");
 }
 
-// Sub-Tab 8: 100-Point Team Grading & ASCII Battle Engine
-function initKPIGrade() {
-  const btn = document.getElementById("btn-calculate-grade");
-  const btnPrev = document.getElementById("btn-grade-prev");
-  const btnNext = document.getElementById("btn-grade-next");
-  const dateInput = document.getElementById("grade-date-input");
-
-  const shiftWeek = (days) => {
-    const curr = parseLocalDate(dateInput?.value || getLatestKPIDate());
-    curr.setDate(curr.getDate() + days);
-    if (dateInput) dateInput.value = formatLocalIsoDate(curr);
-    renderKPIGrade();
-  };
-
-  if (btn) btn.onclick = renderKPIGrade;
-  if (btnPrev) btnPrev.onclick = () => shiftWeek(-7);
-  if (btnNext) btnNext.onclick = () => shiftWeek(7);
-  if (dateInput) {
-    dateInput.onchange = renderKPIGrade;
-    dateInput.oninput = renderKPIGrade;
-  }
-}
-
-function renderKPIGrade() {
-  const outputEl = document.getElementById("grade-report-output");
-  const asciiEl = document.getElementById("ascii-battle-box");
-
-  if (!outputEl) return;
-
-  const dateInput = document.getElementById("grade-date-input");
-  const endStr = dateInput?.value || formatLocalIsoDate(new Date());
-  const endDate = parseLocalDate(endStr);
-
-  // Current Week (Mon-Fri)
-  const dayOfWeek = endDate.getDay();
-  const diffToMon = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
-  const currMon = new Date(endDate);
-  currMon.setDate(endDate.getDate() + diffToMon);
-  const currFri = new Date(currMon);
-  currFri.setDate(currMon.getDate() + 4);
-
-  // Previous Week (Mon-Fri)
-  const prevMon = new Date(currMon);
-  prevMon.setDate(currMon.getDate() - 7);
-  const prevFri = new Date(prevMon);
-  prevFri.setDate(prevMon.getDate() + 4);
-
-  const cMonStr = formatLocalIsoDate(currMon);
-  const cFriStr = formatLocalIsoDate(currFri);
-  const pMonStr = formatLocalIsoDate(prevMon);
-  const pFriStr = formatLocalIsoDate(prevFri);
-
-  const calcGradeForRange = (mStr, fStr) => {
-    const recs = supportKPIState.filter(k => k.date >= mStr && k.date <= fStr);
-    const total = recs.reduce((a, b) => a + getEntryTotal(b), 0);
-    const closed = recs.reduce((a, b) => a + getEntryMetric(b, "Closed"), 0);
-    const bottleneck = recs.reduce((a, b) => a + getEntryBottleneck(b), 0);
-    const migrations = recs.reduce((a, b) => a + getEntryMetric(b, "LHP Migrations"), 0);
-
-    const resPct = total > 0 ? (closed / total) : 0;
-    const botPct = total > 0 ? (bottleneck / total) : 0;
-    const resScore = Math.min(50.0, (resPct / 0.65) * 50.0);
-    const botScore = botPct <= 0.05 ? 50.0 : (botPct >= 0.15 ? 0.0 : ((0.15 - botPct) / 0.10) * 50.0);
-    const bonus = migrations * 0.2;
-    const score = Math.min(100.0, resScore + botScore + bonus);
-
-    let letter = "F";
-    if (score >= 90) letter = "A";
-    else if (score >= 80) letter = "B";
-    else if (score >= 70) letter = "C";
-    else if (score >= 60) letter = "D";
-
-    return { total, closed, bottleneck, migrations, resPct, botPct, resScore, botScore, bonus, score, letter };
-  };
-
-  const curr = calcGradeForRange(cMonStr, cFriStr);
-  const prev = calcGradeForRange(pMonStr, pFriStr);
-  const diff = (curr.score - prev.score).toFixed(1);
-  const diffStr = diff >= 0 ? `+${diff}` : `${diff}`;
-
-  // Member Individual Grades for Current Week
-  const members = ["Christie", "Kevin", "Nishant"];
-  let memberBreakdownText = `👥 MEMBER INDIVIDUAL GRADES:\n`;
-
-  members.forEach(m => {
-    const mRecs = supportKPIState.filter(k => k.member === m && k.date >= cMonStr && k.date <= cFriStr);
-    const mTot = mRecs.reduce((a, b) => a + getEntryTotal(b), 0);
-    const mClo = mRecs.reduce((a, b) => a + getEntryMetric(b, "Closed"), 0);
-    const mBot = mRecs.reduce((a, b) => a + getEntryBottleneck(b), 0);
-    const mMig = mRecs.reduce((a, b) => a + getEntryMetric(b, "LHP Migrations"), 0);
-
-    const mResPct = mTot > 0 ? (mClo / mTot) : 0;
-    const mBotPct = mTot > 0 ? (mBot / mTot) : 0;
-    const mResScore = Math.min(50.0, (mResPct / 0.65) * 50.0);
-    const mBotScore = mBotPct <= 0.05 ? 50.0 : (mBotPct >= 0.15 ? 0.0 : ((0.15 - mBotPct) / 0.10) * 50.0);
-    const mBonus = mMig * 0.2;
-    const mScore = Math.min(100.0, mResScore + mBotScore + mBonus);
-
-    let mGrade = "F";
-    if (mScore >= 90) mGrade = "A";
-    else if (mScore >= 80) mGrade = "B";
-    else if (mScore >= 70) mGrade = "C";
-    else if (mScore >= 60) mGrade = "D";
-
-    memberBreakdownText += `  • ${m.padEnd(9)} : Grade [ ${mGrade} ] (${mScore.toFixed(1)} pts) | Closed: ${mClo}, Bottleneck: ${mBot}\n`;
-  });
-
-  outputEl.textContent = `
-========================================
-       WEEKLY TEAM GRADING REPORT
-========================================
-Target Week: ${cMonStr} to ${cFriStr} (Mon-Fri)
-
-🏆 CURRENT WEEK GRADE  : [ ${curr.letter} ] (${curr.score.toFixed(1)} / 100)
-🕒 PREVIOUS WEEK GRADE : [ ${prev.letter} ] (${prev.score.toFixed(1)} / 100)
-📈 WEEK-OVER-WEEK DELTA: ${diffStr} points
-
-📊 TEAM BENCHMARK METRICS:
-  • Total Touched Volume: ${curr.total.toLocaleString()}
-  • Tickets Closed     : ${curr.closed.toLocaleString()} (${(curr.resPct * 100).toFixed(1)}%)
-  • Bottleneck Tickets : ${curr.bottleneck.toLocaleString()} (${(curr.botPct * 100).toFixed(1)}%)
-  • LHP Migrations     : ${curr.migrations}
-
-💯 SCORE BREAKDOWN:
-  • Resolution Score (Max 50): ${curr.resScore.toFixed(1)} / 50.0
-  • Bottleneck Score (Max 50): ${curr.botScore.toFixed(1)} / 50.0
-  • Extra Credit Bonus       : +${curr.bonus.toFixed(1)} pts
-
-${memberBreakdownText}`;
-
-  if (asciiEl) {
-    asciiEl.textContent = `
-  /\\_/\\   FINAL TEAM GRADE: [ ${curr.letter} ] (${curr.score.toFixed(1)}/100)
- ( o.o )  WEEK DELTA      : ${diffStr} pts
-  > ^ <   BATTLE STATUS   : ${curr.letter === 'A' ? '⚔️ VICTORY! ZERO SLA BREACHES!' : '⚔️ ONSLAUGHT CONTINUES!'}
-`;
-  }
-}
-
-// Sub-Tab 9: Team Numbers & Daily Targets (10 closed/day)
+// Sub-Tab 8: Team Numbers & Daily Targets (10 closed/day)
 function initKPINumbers() {
   const btnPrev = document.getElementById("btn-numbers-prev");
   const btnNext = document.getElementById("btn-numbers-next");
@@ -2427,55 +2294,446 @@ function renderKPITrends() {
 
 // Sub-Tab 6: AI Performance Insights
 function initKPIPerformance() {
-  const select = document.getElementById("perf-member-select");
-  if (select) {
-    select.onchange = renderKPIPerformance;
+  const memberSelect = document.getElementById("perf-member-select");
+  const windowSelect = document.getElementById("perf-window-select");
+
+  if (memberSelect) {
+    if (supportKPIState && supportKPIState.length > 0) {
+      const existingVals = new Set(Array.from(memberSelect.options).map(o => o.value.toLowerCase()));
+      const dbMembers = [...new Set(supportKPIState.map(k => k.member).filter(Boolean))];
+      dbMembers.forEach(m => {
+        if (!existingVals.has(m.toLowerCase())) {
+          const opt = document.createElement("option");
+          opt.value = m;
+          opt.textContent = m;
+          memberSelect.appendChild(opt);
+          existingVals.add(m.toLowerCase());
+        }
+      });
+    }
+    memberSelect.onchange = renderKPIPerformance;
+  }
+  if (windowSelect) {
+    windowSelect.onchange = renderKPIPerformance;
   }
 }
 
 function renderKPIPerformance() {
   const reportEl = document.getElementById("perf-report-card");
   const trendEl = document.getElementById("perf-trendlines-container");
+  const trendTitleEl = document.getElementById("perf-trendlines-title");
 
   if (!reportEl || !trendEl) return;
 
-  const memberFilter = document.getElementById("perf-member-select")?.value || "all";
-  const records = memberFilter === "all" ? supportKPIState : supportKPIState.filter(k => k.member === memberFilter);
+  const memberSelect = document.getElementById("perf-member-select");
+  const windowSelect = document.getElementById("perf-window-select");
 
+  const memberFilter = memberSelect?.value || "all";
+  const windowFilter = windowSelect?.value || "8";
+
+  // Dynamic dropdown population sync
+  if (memberSelect && supportKPIState && supportKPIState.length > 0) {
+    const existingVals = new Set(Array.from(memberSelect.options).map(o => o.value.toLowerCase()));
+    const dbMembers = [...new Set(supportKPIState.map(k => k.member).filter(Boolean))];
+    dbMembers.forEach(m => {
+      if (!existingVals.has(m.toLowerCase())) {
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = m;
+        memberSelect.appendChild(opt);
+        existingVals.add(m.toLowerCase());
+      }
+    });
+  }
+
+  // Filter records by member
+  let records = supportKPIState || [];
+  if (memberFilter !== "all") {
+    records = records.filter(k => k.member && k.member.trim().toLowerCase() === memberFilter.trim().toLowerCase());
+  }
+
+  // Filter records by time window
+  let windowLabel = "All Historical Data";
+  if (windowFilter !== "all") {
+    const numWeeks = parseInt(windowFilter, 10) || 8;
+    const latestDate = parseLocalDate(getLatestKPIDate());
+    const cutoff = new Date(latestDate);
+    cutoff.setDate(cutoff.getDate() - (numWeeks * 7));
+    const cutoffStr = formatLocalIsoDate(cutoff);
+    records = records.filter(k => k.date >= cutoffStr);
+    windowLabel = numWeeks === 1 ? "Latest 1 Week" : `Last ${numWeeks} Weeks`;
+  }
+
+  if (trendTitleEl) {
+    trendTitleEl.textContent = `${memberFilter === 'all' ? 'Team' : memberFilter} Health Trendlines (${windowLabel})`;
+  }
+
+  // Calculate detailed stats from filtered records
+  const totalVolume = records.reduce((acc, r) => acc + getEntryTotal(r), 0);
   const closedCount = records.reduce((acc, r) => acc + getEntryMetric(r, "Closed"), 0);
-  const waitingContact = records.reduce((acc, r) => acc + getEntryMetric(r, "Waiting on Contact"), 0);
-  const waitingUs = records.reduce((acc, r) => acc + getEntryMetric(r, "Waiting on Us"), 0);
+  const wouCount = records.reduce((acc, r) => acc + getEntryMetric(r, "Waiting on Us"), 0);
+  const wocCount = records.reduce((acc, r) => acc + getEntryMetric(r, "Waiting on Contact"), 0);
+  const devReviewCount = records.reduce((acc, r) => acc + getEntryMetric(r, "Dev Review"), 0);
+  const inJiraCount = records.reduce((acc, r) => acc + getEntryMetric(r, "In Jira"), 0);
+  const backlogHealthCount = records.reduce((acc, r) => acc + getEntryMetric(r, "Backlog Health/Activation"), 0);
+  const customerResponseCount = records.reduce((acc, r) => acc + getEntryMetric(r, "Customer Response"), 0);
+  const migrationsCount = records.reduce((acc, r) => acc + getEntryMetric(r, "LHP Migrations"), 0);
 
-  const grade = closedCount > 100 ? "A+ (Excellent Throughput)" : (closedCount > 40 ? "A (High Performance)" : "B+ (Steady)");
+  const bottleneckCount = wouCount + devReviewCount + inJiraCount;
+  const activeBacklogCount = wocCount + customerResponseCount + backlogHealthCount;
+
+  // Active logging days & daily velocity
+  const loggedDates = [...new Set(records.filter(r => getEntryTotal(r) > 0).map(r => r.date))];
+  const activeDays = loggedDates.length || 1;
+  const avgDailyClosed = (closedCount / activeDays).toFixed(1);
+
+  // Scoring rubric matching Team Grading (100 pts max)
+  const resPct = totalVolume > 0 ? (closedCount / totalVolume) : 0;
+  const botPct = totalVolume > 0 ? (bottleneckCount / totalVolume) : 0;
+  const resScore = Math.min(50.0, (resPct / 0.65) * 50.0);
+  const botScore = botPct <= 0.05 ? 50.0 : (botPct >= 0.15 ? 0.0 : ((0.15 - botPct) / 0.10) * 50.0);
+  const bonus = migrationsCount * 0.2;
+  const score = Math.min(100.0, resScore + botScore + bonus);
+
+  let letter = "F";
+  let gradeStatus = "Critical Bottlenecks";
+  let gradeColor = "#dc2626";
+  let gradeBg = "#fef2f2";
+  let gradeBorder = "#fecaca";
+
+  if (totalVolume === 0) {
+    letter = "N/A";
+    gradeStatus = "No Activity Logged";
+    gradeColor = "#64748b";
+    gradeBg = "#f8fafc";
+    gradeBorder = "#e2e8f0";
+  } else if (score >= 93) {
+    letter = "A+";
+    gradeStatus = "Exceptional Throughput";
+    gradeColor = "#047857";
+    gradeBg = "#f0fdf4";
+    gradeBorder = "#a7f3d0";
+  } else if (score >= 85) {
+    letter = "A";
+    gradeStatus = "High Performance";
+    gradeColor = "#047857";
+    gradeBg = "#f0fdf4";
+    gradeBorder = "#a7f3d0";
+  } else if (score >= 80) {
+    letter = "B+";
+    gradeStatus = "Steady Delivery";
+    gradeColor = "#1d4ed8";
+    gradeBg = "#eff6ff";
+    gradeBorder = "#bfdbfe";
+  } else if (score >= 75) {
+    letter = "B";
+    gradeStatus = "Good Balance";
+    gradeColor = "#1d4ed8";
+    gradeBg = "#eff6ff";
+    gradeBorder = "#bfdbfe";
+  } else if (score >= 70) {
+    letter = "B-";
+    gradeStatus = "Moderate Stalls";
+    gradeColor = "#b45309";
+    gradeBg = "#fffbeb";
+    gradeBorder = "#fde68a";
+  } else if (score >= 60) {
+    letter = "C";
+    gradeStatus = "Needs Attention";
+    gradeColor = "#b45309";
+    gradeBg = "#fffbeb";
+    gradeBorder = "#fde68a";
+  } else {
+    letter = "D";
+    gradeStatus = "Bottleneck Alert";
+    gradeColor = "#b91c1c";
+    gradeBg = "#fef2f2";
+    gradeBorder = "#fecaca";
+  }
+
+  const targetDisplayName = memberFilter === "all" ? "Entire Support & Dev Team" : memberFilter;
+
+  // AI Diagnostic Summary logic tailored to real stats
+  let diagnosticText = "";
+  if (totalVolume === 0) {
+    diagnosticText = `No activity logs found for <strong>${targetDisplayName}</strong> in the selected timeframe (${windowLabel}). Select a broader date window or log entries in the Daily Entry tab.`;
+  } else if (score >= 90) {
+    diagnosticText = `🚀 <strong>Outstanding Flow:</strong> <strong>${targetDisplayName}</strong> is delivering top-tier performance with a <strong>${(resPct * 100).toFixed(1)}%</strong> resolution velocity and minimal bottleneck ratio (<strong>${(botPct * 100).toFixed(1)}%</strong>). SLA compliance is well above target benchmarks.`;
+  } else if (botPct >= 0.12) {
+    diagnosticText = `⚠️ <strong>Bottleneck Alert:</strong> <strong>${targetDisplayName}</strong> has <strong>${bottleneckCount}</strong> tickets in bottleneck states (${wouCount} waiting on us, ${devReviewCount} in dev review, ${inJiraCount} in Jira), representing <strong>${(botPct * 100).toFixed(1)}%</strong> of total touched volume. Focus on clearing dev review and Jira escalations.`;
+  } else if (resPct < 0.50) {
+    diagnosticText = `📈 <strong>Throughput Opportunity:</strong> <strong>${targetDisplayName}</strong> closed <strong>${closedCount}</strong> tickets (${(resPct * 100).toFixed(1)}% resolution rate) across ${activeDays} active day(s). Backlog holds ${activeBacklogCount} tickets awaiting customer response or activation.`;
+  } else {
+    diagnosticText = `✅ <strong>Steady Velocity:</strong> <strong>${targetDisplayName}</strong> maintains balanced ticket resolution (${(resPct * 100).toFixed(1)}%) with controlled bottleneck exposure (${(botPct * 100).toFixed(1)}%). Daily throughput averages ${avgDailyClosed} closed tickets/day.`;
+  }
 
   reportEl.innerHTML = `
-    <div style="background: #f8fafc; padding: 14px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
-      <div style="font-weight: 800; font-size: 1.1rem; color: #047857; margin-bottom: 6px;">
-        <i class="fa-solid fa-award"></i> Overall Grade: ${grade}
+    <div style="background: ${gradeBg}; padding: 14px 16px; border-radius: 8px; border: 1px solid ${gradeBorder}; margin-bottom: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+        <div>
+          <div style="font-weight: 800; font-size: 1.15rem; color: ${gradeColor}; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-award"></i> Overall Grade: ${letter} <span style="font-size: 0.88rem; font-weight: 600;">(${gradeStatus})</span>
+          </div>
+          <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">
+            Composite Score: <strong>${score.toFixed(1)} / 100 pts</strong> &bull; Period: <strong>${windowLabel}</strong>
+          </div>
+        </div>
+        <div class="mini-avatar" style="width: 28px; height: 28px; font-size: 0.75rem;">
+          ${(memberFilter === 'all' ? 'TM' : memberFilter.slice(0, 2)).toUpperCase()}
+        </div>
       </div>
-      <div><strong>Evaluated Target:</strong> ${memberFilter.toUpperCase()}</div>
-      <div><strong>Total Tickets Closed:</strong> ${closedCount.toLocaleString()}</div>
-      <div><strong>Current Backlog:</strong> ${waitingUs} waiting on us, ${waitingContact} waiting on contact</div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.78rem; margin-top: 8px; padding-top: 8px; border-top: 1px dashed ${gradeBorder};">
+        <div><strong>Evaluated Target:</strong> ${targetDisplayName}</div>
+        <div><strong>Total Touched:</strong> ${totalVolume.toLocaleString()} tickets</div>
+        <div><strong>Tickets Closed:</strong> <span style="color: #047857; font-weight: 700;">${closedCount.toLocaleString()}</span> (${(resPct * 100).toFixed(1)}%)</div>
+        <div><strong>Daily Pace:</strong> ${avgDailyClosed} closed/day (${activeDays} days)</div>
+        <div style="grid-column: 1 / -1;">
+          <strong>Current Backlog:</strong> ${wouCount} waiting on us, ${wocCount} waiting on contact, ${devReviewCount} dev review, ${inJiraCount} Jira
+        </div>
+      </div>
     </div>
-    <div style="font-size: 0.8rem; color: var(--text-muted);">
-      🤖 <strong>AI Diagnostic Summary:</strong> Team throughput remains highly optimal. Resolution rate is balanced with minimal SLA bottleneck.
+
+    <div style="font-size: 0.8rem; line-height: 1.5; color: var(--text-main); background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px;">
+      ${diagnosticText}
     </div>
   `;
 
+  // Right card trendlines computation
+  const resVelocityPct = totalVolume > 0 ? (resPct * 100).toFixed(1) : "0.0";
+  const clearancePct = totalVolume > 0 ? (((totalVolume - bottleneckCount) / totalVolume) * 100).toFixed(1) : "0.0";
+  const slaAdherencePct = Math.max(0, Math.min(100, Math.round((botScore / 50) * 100))).toFixed(1);
+  const targetDailyPace = Math.min(100, Math.round((Number(avgDailyClosed) / 10) * 100));
+
+  const resBarColor = resPct >= 0.65 ? "green-fill" : resPct >= 0.45 ? "" : "amber-fill";
+  const flowBarColor = Number(clearancePct) >= 85 ? "green-fill" : Number(clearancePct) >= 70 ? "" : "amber-fill";
+  const slaBarColor = Number(slaAdherencePct) >= 85 ? "green-fill" : Number(slaAdherencePct) >= 60 ? "amber-fill" : "";
+  const paceBarColor = targetDailyPace >= 100 ? "green-fill" : targetDailyPace >= 70 ? "" : "amber-fill";
+
   trendEl.innerHTML = `
-    <div class="analytics-bar-item">
-      <div class="analytics-bar-label"><span>Resolution Velocity</span><strong>98.4%</strong></div>
-      <div class="analytics-progress-bg"><div class="analytics-progress-fill green-fill" style="width: 98%;"></div></div>
+    <div class="analytics-bar-item" style="margin-bottom: 12px;">
+      <div class="analytics-bar-label">
+        <span><i class="fa-solid fa-bolt" style="color: #059669; margin-right: 4px;"></i>Resolution Velocity</span>
+        <strong>${resVelocityPct}% <span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">(${closedCount.toLocaleString()} / ${totalVolume.toLocaleString()})</span></strong>
+      </div>
+      <div class="analytics-progress-bg">
+        <div class="analytics-progress-fill ${resBarColor}" style="width: ${Math.min(100, Math.round(Number(resVelocityPct)))}%;"></div>
+      </div>
     </div>
-    <div class="analytics-bar-item">
-      <div class="analytics-bar-label"><span>Backlog Clearance Speed</span><strong>94.2%</strong></div>
-      <div class="analytics-progress-bg"><div class="analytics-progress-fill" style="width: 94%;"></div></div>
+
+    <div class="analytics-bar-item" style="margin-bottom: 12px;">
+      <div class="analytics-bar-label">
+        <span><i class="fa-solid fa-arrows-spin" style="color: #2563eb; margin-right: 4px;"></i>Backlog Flow & Clearance</span>
+        <strong>${clearancePct}% <span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">(${(totalVolume - bottleneckCount).toLocaleString()} unstalled)</span></strong>
+      </div>
+      <div class="analytics-progress-bg">
+        <div class="analytics-progress-fill ${flowBarColor}" style="width: ${Math.min(100, Math.round(Number(clearancePct)))}%;"></div>
+      </div>
     </div>
+
+    <div class="analytics-bar-item" style="margin-bottom: 12px;">
+      <div class="analytics-bar-label">
+        <span><i class="fa-solid fa-shield-halved" style="color: ${Number(slaAdherencePct) >= 80 ? '#059669' : '#d97706'}; margin-right: 4px;"></i>SLA Adherence Score</span>
+        <strong>${slaAdherencePct}% <span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">(${bottleneckCount.toLocaleString()} stalled)</span></strong>
+      </div>
+      <div class="analytics-progress-bg">
+        <div class="analytics-progress-fill ${slaBarColor}" style="width: ${Math.min(100, Math.round(Number(slaAdherencePct)))}%;"></div>
+      </div>
+    </div>
+
     <div class="analytics-bar-item">
-      <div class="analytics-bar-label"><span>SLA Adherence Score</span><strong>99.1%</strong></div>
-      <div class="analytics-progress-bg"><div class="analytics-progress-fill green-fill" style="width: 99%;"></div></div>
+      <div class="analytics-bar-label">
+        <span><i class="fa-solid fa-bullseye" style="color: #7c3aed; margin-right: 4px;"></i>Daily Target Output (10/day goal)</span>
+        <strong>${avgDailyClosed} / day <span style="font-size: 0.72rem; font-weight: normal; color: var(--text-muted);">(${targetDailyPace}%)</span></strong>
+      </div>
+      <div class="analytics-progress-bg">
+        <div class="analytics-progress-fill ${paceBarColor}" style="width: ${targetDailyPace}%;"></div>
+      </div>
     </div>
   `;
+
+  // Populate What Could Be Improved Recommendations
+  const improvementsEl = document.getElementById("perf-improvements-container");
+  const improvementsBadgeEl = document.getElementById("perf-improvements-badge");
+  const improvementsTitleEl = document.getElementById("perf-improvements-title");
+
+  if (improvementsTitleEl) {
+    improvementsTitleEl.textContent = `What Could Be Improved (${targetDisplayName})`;
+  }
+
+  const improvementItems = [];
+
+  if (totalVolume === 0) {
+    improvementItems.push({
+      priority: "INFO",
+      badgeColor: "#64748b",
+      badgeBg: "#f8fafc",
+      borderColor: "#cbd5e1",
+      icon: "fa-circle-info",
+      title: "No Logging Activity in Selected Period",
+      metric: `0 records found for ${targetDisplayName} in ${windowLabel}.`,
+      action: "Log daily tickets in the Daily Entry tab or select a broader time window above to view improvement analytics."
+    });
+  } else {
+    // 1. Bottleneck Reduction (Waiting on Us, Dev Review, In Jira)
+    if (bottleneckCount > 0 || botPct > 0.05) {
+      const isCritical = botPct >= 0.12;
+      const isHigh = botPct > 0.05;
+      const priority = isCritical ? "HIGH PRIORITY" : isHigh ? "MEDIUM PRIORITY" : "OPTIMIZATION";
+      const badgeColor = isCritical ? "#dc2626" : isHigh ? "#d97706" : "#2563eb";
+      const badgeBg = isCritical ? "#fef2f2" : isHigh ? "#fffbeb" : "#eff6ff";
+      const borderColor = isCritical ? "#fca5a5" : isHigh ? "#fde68a" : "#bfdbfe";
+
+      const stallDetails = [];
+      if (wouCount > 0) stallDetails.push(`<strong>${wouCount}</strong> Waiting on Us`);
+      if (devReviewCount > 0) stallDetails.push(`<strong>${devReviewCount}</strong> in Dev Review`);
+      if (inJiraCount > 0) stallDetails.push(`<strong>${inJiraCount}</strong> in Jira`);
+
+      const stallActionSteps = [];
+      if (wouCount > 0) stallActionSteps.push(`Triage the ${wouCount} tickets waiting on team response`);
+      if (devReviewCount > 0) stallActionSteps.push(`Schedule code reviews with engineering to unblock the ${devReviewCount} Dev Review tickets`);
+      if (inJiraCount > 0) stallActionSteps.push(`Follow up on the ${inJiraCount} escalated Jira bug tickets`);
+
+      const scoreImpact = (50.0 - botScore).toFixed(1);
+
+      improvementItems.push({
+        priority,
+        badgeColor,
+        badgeBg,
+        borderColor,
+        icon: "fa-triangle-exclamation",
+        title: "Bottleneck Queue & Stalled Escalations",
+        metric: `${bottleneckCount.toLocaleString()} tickets (${(botPct * 100).toFixed(1)}% of volume) are currently stalled in bottlenecks (${stallDetails.join(", ")}). The team target benchmark is under 5.0%.`,
+        action: `${stallActionSteps.join(". ")}. Reducing bottlenecks to <= 5% (<= ${Math.floor(totalVolume * 0.05)} tickets) recovers +${scoreImpact} points toward a perfect 50.0 bottleneck score.`
+      });
+    }
+
+    // 2. Resolution Velocity (Target: >= 65%)
+    if (resPct < 0.65) {
+      const neededClosed = Math.max(1, Math.ceil(totalVolume * 0.65) - closedCount);
+      const isHigh = resPct < 0.50;
+      const priority = isHigh ? "HIGH PRIORITY" : "MEDIUM PRIORITY";
+      const badgeColor = isHigh ? "#dc2626" : "#d97706";
+      const badgeBg = isHigh ? "#fef2f2" : "#fffbeb";
+      const borderColor = isHigh ? "#fca5a5" : "#fde68a";
+      const scoreImpact = (50.0 - resScore).toFixed(1);
+
+      improvementItems.push({
+        priority,
+        badgeColor,
+        badgeBg,
+        borderColor,
+        icon: "fa-gauge-high",
+        title: "Resolution Velocity & Completion Benchmark",
+        metric: `Current resolution rate is ${(resPct * 100).toFixed(1)}% (${closedCount.toLocaleString()} closed of ${totalVolume.toLocaleString()} touched tickets). The team goal benchmark is >= 65.0%.`,
+        action: `Drive ${neededClosed.toLocaleString()} additional tickets to closure from pending backlog. Advancing tickets from customer follow-up to resolved status will yield +${scoreImpact} resolution points (max 50.0 pts).`
+      });
+    }
+
+    // 3. Daily Output Pace (Target: 10/day)
+    if (Number(avgDailyClosed) < 10.0) {
+      const paceGap = (10.0 - Number(avgDailyClosed)).toFixed(1);
+      const isMedium = Number(avgDailyClosed) < 7.0;
+      const priority = isMedium ? "MEDIUM PRIORITY" : "LOW PRIORITY";
+      const badgeColor = isMedium ? "#d97706" : "#64748b";
+      const badgeBg = isMedium ? "#fffbeb" : "#f8fafc";
+      const borderColor = isMedium ? "#fde68a" : "#e2e8f0";
+
+      improvementItems.push({
+        priority,
+        badgeColor,
+        badgeBg,
+        borderColor,
+        icon: "fa-bullseye",
+        title: "Daily Closed Ticket Pace",
+        metric: `Averaging ${avgDailyClosed} closed tickets/day across ${activeDays} active logging day(s) (${targetDailyPace}% of 10 closed/day standard).`,
+        action: `Increase daily resolution rate by +${paceGap} tickets/day. Batch-close confirmed resolutions and conduct a daily 15-minute end-of-day closure sweep to consistently hit the 10/day mark.`
+      });
+    }
+
+    // 4. Aging Backlog & Customer Response Follow-Up
+    if (wocCount > 0 || customerResponseCount > 0) {
+      const isMedium = wocCount > 25 || customerResponseCount > 10;
+      const priority = isMedium ? "MEDIUM PRIORITY" : "OPTIMIZATION";
+      const badgeColor = isMedium ? "#d97706" : "#2563eb";
+      const badgeBg = isMedium ? "#fffbeb" : "#eff6ff";
+      const borderColor = isMedium ? "#fde68a" : "#bfdbfe";
+
+      improvementItems.push({
+        priority,
+        badgeColor,
+        badgeBg,
+        borderColor,
+        icon: "fa-clock-rotate-left",
+        title: "Backlog Hygiene & Waiting Customer Follow-Up",
+        metric: `${wocCount.toLocaleString()} tickets currently Waiting on Contact and ${customerResponseCount.toLocaleString()} in Customer Response queue.`,
+        action: "Send second-touch reminder nudges on tickets awaiting client info. Auto-close threads inactive past 5 business days to keep the active queue clean and focused."
+      });
+    }
+
+    // 5. Extra Credit (LHP Migrations)
+    if (migrationsCount === 0) {
+      improvementItems.push({
+        priority: "OPPORTUNITY",
+        badgeColor: "#059669",
+        badgeBg: "#f0fdf4",
+        borderColor: "#a7f3d0",
+        icon: "fa-plus-circle",
+        title: "LHP Migrations Extra Credit Opportunity",
+        metric: `0 LHP Migrations logged in the current window (${windowLabel}).`,
+        action: "Complete and record LHP Migrations in the Daily Entry tab to earn +0.2 extra credit bonus points per migration toward the final performance composite."
+      });
+    }
+
+    // If everything is in stellar shape
+    if (improvementItems.length === 0 || (bottleneckCount === 0 && resPct >= 0.65 && Number(avgDailyClosed) >= 10.0)) {
+      improvementItems.unshift({
+        priority: "BENCHMARK LEADER",
+        badgeColor: "#059669",
+        badgeBg: "#f0fdf4",
+        borderColor: "#a7f3d0",
+        icon: "fa-circle-check",
+        title: "All Core KPI Targets & Benchmarks Surpassed",
+        metric: `Resolution velocity is optimal (${(resPct * 100).toFixed(1)}%), bottlenecks are minimized (${(botPct * 100).toFixed(1)}%), and daily pace is strong (${avgDailyClosed}/day).`,
+        action: "Maintain current throughput habits, continue proactive triage, and mentor team peers on workflow optimization."
+      });
+    }
+  }
+
+  if (improvementsBadgeEl) {
+    const actionCount = improvementItems.filter(i => i.priority !== "BENCHMARK LEADER" && i.priority !== "INFO").length;
+    improvementsBadgeEl.textContent = actionCount > 0 ? `${actionCount} Action Items` : "All Benchmarks Met";
+    improvementsBadgeEl.style.background = actionCount > 0 ? "#eff6ff" : "#f0fdf4";
+    improvementsBadgeEl.style.color = actionCount > 0 ? "#1d4ed8" : "#047857";
+    improvementsBadgeEl.style.borderColor = actionCount > 0 ? "#bfdbfe" : "#a7f3d0";
+  }
+
+  if (improvementsEl) {
+    improvementsEl.innerHTML = `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px;">
+        ${improvementItems.map(item => `
+          <div style="background: ${item.badgeBg}; border: 1px solid ${item.borderColor}; border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: ${item.badgeColor}; letter-spacing: 0.5px;">
+                  <i class="fa-solid ${item.icon}" style="margin-right: 4px;"></i>${item.priority}
+                </span>
+              </div>
+              <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); margin-bottom: 4px;">
+                ${item.title}
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 8px;">
+                ${item.metric}
+              </div>
+            </div>
+            <div style="font-size: 0.76rem; line-height: 1.45; color: var(--text-main); background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.06); padding: 8px 10px; border-radius: 6px;">
+              <strong>💡 Action:</strong> ${item.action}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
 }
 
 // Sub-Tab 7: Manage Database & Edit KPI Submissions
@@ -2577,7 +2835,6 @@ function initKPIEditModal() {
     if (typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
     if (typeof renderKPITrends === "function") renderKPITrends();
     if (typeof renderKPIPerformance === "function") renderKPIPerformance();
-    if (typeof renderKPIGrade === "function") renderKPIGrade();
     if (typeof renderKPINumbers === "function") renderKPINumbers();
 
     closeModal();
@@ -2698,7 +2955,6 @@ function renderKPIDbManager() {
         if (typeof renderWeeklyKPISummary === "function") renderWeeklyKPISummary();
         if (typeof renderKPITrends === "function") renderKPITrends();
         if (typeof renderKPIPerformance === "function") renderKPIPerformance();
-        if (typeof renderKPIGrade === "function") renderKPIGrade();
         if (typeof renderKPINumbers === "function") renderKPINumbers();
       }
     };

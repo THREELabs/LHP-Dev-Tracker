@@ -95,12 +95,12 @@
     "jiraId": "DEV-2159",
     "jiraUrl": "https://lhpcorp.atlassian.net/browse/DEV-2159",
     "title": "Security & Vulnerability Patching (Q3)",
-    category: "LHP Core",
-    priority: "High",
-    status: "completed",
-    submitter: "Christie",
-    assignee: "Kevin",
-    points: 3,
-    desc: "Update core dependencies and pass annual penetration audit checks."
+    "category": "LHP Core",
+    "priority": "High",
+    "status": "completed",
+    "submitter": "Christie",
+    "assignee": "Kevin",
+    "points": 3,
+    "desc": "Update core dependencies and pass annual penetration audit checks."
   }
 ]
