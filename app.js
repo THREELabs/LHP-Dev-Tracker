@@ -518,21 +518,31 @@ function initSearchAndFilters() {
   if (filterSubmitter) filterSubmitter.addEventListener("change", filterAndRender);
   if (filterCategory) filterCategory.addEventListener("change", filterAndRender);
   if (filterPriority) filterPriority.addEventListener("change", filterAndRender);
+
+  const btnExport = document.getElementById("btn-export-escalations");
+  if (btnExport) {
+    btnExport.addEventListener("click", exportEscalationsToTxt);
+  }
 }
 
+// Current board tasks (tracked for filtering and exporting)
+let currentRenderedTasks = null;
+
 function filterAndRender() {
-  const query = document.getElementById("task-search").value.toLowerCase();
+  const query = document.getElementById("task-search") ? document.getElementById("task-search").value.toLowerCase().trim() : "";
   const submitterFilter = document.getElementById("filter-submitter") ? document.getElementById("filter-submitter").value : "all";
   const categoryFilter = document.getElementById("filter-category") ? document.getElementById("filter-category").value : "all";
   const priorityFilter = document.getElementById("filter-priority") ? document.getElementById("filter-priority").value : "all";
 
   const filtered = tasksState.filter(task => {
-    const matchesQuery = task.title.toLowerCase().includes(query) ||
-                         task.desc.toLowerCase().includes(query) ||
-                         task.id.toLowerCase().includes(query) ||
+    const matchesQuery = !query ||
+                         (task.title && task.title.toLowerCase().includes(query)) ||
+                         (task.desc && task.desc.toLowerCase().includes(query)) ||
+                         (task.id && task.id.toLowerCase().includes(query)) ||
                          (task.jiraId && task.jiraId.toLowerCase().includes(query)) ||
-                         task.category.toLowerCase().includes(query) ||
-                         task.submitter.toLowerCase().includes(query);
+                         (task.jiraUrl && task.jiraUrl.toLowerCase().includes(query)) ||
+                         (task.category && task.category.toLowerCase().includes(query)) ||
+                         (task.submitter && task.submitter.toLowerCase().includes(query));
 
     const matchesSubmitter = submitterFilter === "all" || task.submitter === submitterFilter;
     const matchesCategory = categoryFilter === "all" || task.category === categoryFilter;
@@ -544,8 +554,88 @@ function filterAndRender() {
   renderBoard(filtered);
 }
 
+// Format a single task into text representation for .txt export
+function formatTaskForTxtExport(task) {
+  const ticketId = task.jiraId || extractJiraTicketId(task.jiraUrl) || task.id || "";
+  let ticketUrl = task.jiraUrl || "";
+
+  // If URL wasn't provided directly but ticket ID exists in standard pattern, construct URL
+  if (!ticketUrl && ticketId && /^[A-Z0-9]+-\d+$/i.test(ticketId)) {
+    ticketUrl = `https://lhpcorp.atlassian.net/browse/${ticketId}`;
+  }
+
+  const lines = [];
+
+  if (ticketId && ticketUrl && ticketUrl !== ticketId) {
+    lines.push(`${ticketId} - ${ticketUrl}`);
+  } else if (ticketUrl) {
+    lines.push(ticketUrl);
+  } else if (ticketId) {
+    lines.push(ticketId);
+  } else if (task.title) {
+    lines.push(task.title);
+  }
+
+  const rawDesc = (task.desc || task.description || "").trim();
+  const hasDesc = rawDesc &&
+                  rawDesc.toLowerCase() !== "no description provided." &&
+                  rawDesc.toLowerCase() !== "no description";
+
+  if (hasDesc) {
+    lines.push(`Description: ${rawDesc}`);
+  }
+
+  return lines.join("\n");
+}
+
+// Export escalation Jira tickets and descriptions to .txt file
+function exportEscalationsToTxt() {
+  const searchInput = document.getElementById("task-search");
+  const filterSubmitter = document.getElementById("filter-submitter");
+  const filterCategory = document.getElementById("filter-category");
+  const filterPriority = document.getElementById("filter-priority");
+
+  const isFiltered = (searchInput && searchInput.value.trim() !== "") ||
+                     (filterSubmitter && filterSubmitter.value !== "all") ||
+                     (filterCategory && filterCategory.value !== "all") ||
+                     (filterPriority && filterPriority.value !== "all");
+
+  const tasksToExport = isFiltered
+    ? (Array.isArray(currentRenderedTasks) ? currentRenderedTasks : [])
+    : (Array.isArray(tasksState) && tasksState.length > 0 ? tasksState : (currentRenderedTasks || []));
+
+  if (!tasksToExport || tasksToExport.length === 0) {
+    if (isFiltered) {
+      alert("No escalation tasks match the current filters to export.");
+    } else {
+      alert("No escalation tasks found to export.");
+    }
+    return;
+  }
+
+  // Preserve board sort order (starred tasks first)
+  const sortedTasks = [...tasksToExport].sort((a, b) => (b.isStarred ? 1 : 0) - (a.isStarred ? 1 : 0));
+  const textContent = sortedTasks.map(formatTaskForTxtExport).join("\n\n") + "\n";
+
+  const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+  const downloadUrl = URL.createObjectURL(blob);
+  const downloadAnchor = document.createElement("a");
+  const dateStr = typeof formatLocalIsoDate === "function"
+    ? formatLocalIsoDate(new Date())
+    : new Date().toISOString().slice(0, 10);
+
+  downloadAnchor.setAttribute("href", downloadUrl);
+  downloadAnchor.setAttribute("download", `escalation_tickets_${dateStr}.txt`);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
+  setTimeout(() => URL.revokeObjectURL(downloadUrl), 1500);
+}
+
 // Render Kanban Board Cards
 function renderBoard(tasksToRender = tasksState) {
+  currentRenderedTasks = tasksToRender;
+
   const containers = {
     "backlog": document.getElementById("container-backlog"),
     "completed": document.getElementById("container-completed")

@@ -628,6 +628,7 @@ body {
 .board-controls {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   font-size: 0.85rem;
   color: var(--text-muted);
@@ -643,6 +644,30 @@ body {
   font-size: 0.85rem;
   font-weight: 500;
   box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.btn-export-board {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  transition: var(--transition-fast);
+}
+
+.btn-export-board:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: var(--lhp-blue);
+  transform: translateY(-1px);
 }
 
 /* Kanban Board */
